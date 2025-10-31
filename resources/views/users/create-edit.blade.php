@@ -1,9 +1,6 @@
 @extends('adminlte::page')
 
-@section('title')
-    {{ isset($user) ? 'Editar Usuario' : 'Crear Usuario' }}
-@endsection
-
+@section('title', isset($user) ? 'Editar Usuario' : 'Crear Usuario')
 
 @section('content_header')
     <h1>{{ isset($user) ? 'Editar Usuario' : 'Nuevo Usuario' }}</h1>
@@ -12,87 +9,98 @@
 @section('content')
     <div class="card">
         <div class="card-body">
-            @if ($errors->any())
-                <div class="alert alert-danger">
-                    <ul>
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-            @if (isset($user))
-                {!! Form::model($user, ['route' => ['users.update', $user->id], 'method' => 'PUT']) !!}
-            @else
-                {!! Form::open(['route' => 'users.store', 'method' => 'POST']) !!}
-            @endif
+            <form action="{{ isset($user) ? route('users.update', $user->id) : route('users.store') }}" method="POST">
+                @csrf
+                @if (isset($user))
+                    @method('PUT')
+                @endif
 
-            <div class="form-group">
-                {!! Form::label('full_name', 'Nombre') !!}
-                {!! Form::text('full_name', isset($user) ? $user->full_name : null, [
-                    'class' => 'form-control',
-                ]) !!}
-            </div>
-
-            <div class="form-group">
-                {!! Form::label('password', 'Contraseña (dejar en blanco para no cambiar)') !!}
-                {!! Form::password('password', ['class' => 'form-control', 'autocomplete' => 'new-password']) !!}
-            </div>
-
-            <div class="form-group">
-                {!! Form::label('password_confirmation', 'Confirmar Contraseña') !!}
-                {!! Form::password('password_confirmation', ['class' => 'form-control']) !!}
-            </div>
-
-            @role('administrador')
+                {{-- ===================== --}}
+                {{-- NOMBRE COMPLETO --}}
+                {{-- ===================== --}}
                 <div class="form-group">
-                    {!! Form::label('phone_number', 'Teléfono') !!}
-                    {!! Form::text('phone_number', isset($user) ? $user->phone_number : null, [
-                        'class' => 'form-control',
-                        'maxlength' => 10,
-                        'minlength' => 10,
-                        'pattern' => '[0-9]{10}', // opcional, asegura solo 10 dígitos
-                        'placeholder' => 'Ej: 5523456789',
-                    ]) !!}
+                    <label for="full_name">Nombre completo</label>
+                    <input type="text" name="full_name" id="full_name" class="form-control"
+                        value="{{ old('full_name', $user->full_name ?? '') }}" required>
+                    @error('full_name')
+                        <span class="text-danger">{{ $message }}</span>
+                    @enderror
                 </div>
 
-                {!! Form::label('active', 'Estado del empleado') !!}
-                <div>
-                    <label class="mr-3">
-                        {!! Form::radio('is_active', 1, isset($user) ? $user->is_active == 1 : true) !!} Activo
+                {{-- ===================== --}}
+                {{-- CONTRASEÑA --}}
+                {{-- ===================== --}}
+                <div class="form-group">
+                    <label for="password">Contraseña
+                        <small class="text-muted fst-italic">(dejar en blanco para no cambiar)</small>
                     </label>
-                    <label>
-                        {!! Form::radio('is_active', 0, isset($user) ? $user->is_active == 0 : false) !!} Inactivo
-                    </label>
+                    <input type="password" name="password" id="password" class="form-control" autocomplete="new-password">
+                    @error('password')
+                        <span class="text-danger">{{ $message }}</span>
+                    @enderror
                 </div>
-            @endrole
 
+                {{-- ===================== --}}
+                {{-- CONFIRMAR CONTRASEÑA --}}
+                {{-- ===================== --}}
+                <div class="form-group">
+                    <label for="password_confirmation">Confirmar contraseña</label>
+                    <input type="password" name="password_confirmation" id="password_confirmation" class="form-control">
+                </div>
 
+                {{-- ===================== --}}
+                {{-- SOLO ADMIN --}}
+                {{-- ===================== --}}
+                @role('administrador')
+                    <div class="form-group">
+                        <label for="phone_number">Teléfono</label>
+                        <input type="text" name="phone_number" id="phone_number" class="form-control" maxlength="10"
+                            minlength="10" pattern="[0-9]{10}" placeholder="Ej: 4444556677"
+                            value="{{ old('phone_number', $user->phone_number ?? '') }}">
+                        @error('phone_number')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
 
-            <button type="submit" class="btn btn-primary">
-                {{ isset($user) ? 'Actualizar' : 'Guardar' }}
-            </button>
-            <a href="{{ route('users.index') }}" class="btn btn-danger">
-                Cancelar
-            </a>
+                    {{-- Estado --}}
+                    <div class="form-group">
+                        <label>Estado del empleado</label>
+                        <div>
+                            <label class="mr-3">
+                                <input type="radio" name="is_active" value="1"
+                                    {{ old('is_active', $user->is_active ?? 1) == 1 ? 'checked' : '' }}> Activo
+                            </label>
+                            <label>
+                                <input type="radio" name="is_active" value="0"
+                                    {{ old('is_active', $user->is_active ?? 1) == 0 ? 'checked' : '' }}> Inactivo
+                            </label>
+                        </div>
+                    </div>
+                @endrole
 
-            {!! Form::close() !!}
+                {{-- ===================== --}}
+                {{-- BOTONES --}}
+                {{-- ===================== --}}
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> {{ isset($user) ? 'Actualizar' : 'Guardar' }}
+                    </button>
+                    <a href="{{ route('users.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                </div>
+
+            </form>
         </div>
     </div>
 @stop
 
 @section('css')
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    {{-- Si necesitas estilos adicionales --}}
+    {{-- <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" /> --}}
 @stop
 
 @section('js')
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    {{-- <script>
-        $(document).ready(function() {
-            $('.select2').select2({
-                placeholder: "Seleccione roles",
-                allowClear: true
-            });
-        });
-    </script> --}}
+    {{-- Si quieres agregar validaciones JS o algo como select2 --}}
+    {{-- <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script> --}}
 @stop

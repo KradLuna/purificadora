@@ -14,7 +14,6 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class User extends Authenticatable
 {
@@ -114,11 +113,11 @@ class User extends Authenticatable
             ->whereHas(
                 'record_type',
                 fn($q) =>
-                $q->where('name', RecordType::TYPES[3]) //corte de caja
+                $q->where('name', RecordType::TYPES[3]) //fin de turno
             )
             ->exists();
         if ($endWorkShift) {
-            $type = RecordType::TYPES[3];
+            $type = RecordType::TYPES[3]; //fin de turno
             $errorMsg = "Ya realizaste $type, ya no puedes realizar ventas.";
             return false;
         }
@@ -149,12 +148,6 @@ class User extends Authenticatable
         logger('this->getLitersPerWorkShiftSale()>>>>' . $this->getLitersPerWorkShiftSale());
         logger('this->getCounterLiters()>>>>' . $this->getCounterLiters());
         logger('abs($this->getLitersPerWorkShiftSale() - $this->getCounterLiters()) < $allowed_range ? true : false>>>>' . (abs($this->getLitersPerWorkShiftSale() - $this->getCounterLiters()) < $allowed_range ? true : false));
-        // Log::info('Comparación de litros', [
-        //     'allowed_range' => $allowed_range,
-        //     'litersPerWorkShiftSale' => $this->getLitersPerWorkShiftSale(),
-        //     'counterLiters' => $this->getCounterLiters(),
-        //     'resultado' => abs($this->getLitersPerWorkShiftSale() - $this->getCounterLiters()) < $allowed_range,
-        // ]);
         return abs($this->getLitersPerWorkShiftSale() - $this->getCounterLiters()) < $allowed_range ? true : false;
     }
 
@@ -171,7 +164,7 @@ class User extends Authenticatable
     }
 
     /**
-     * obtenemos el valor del contador de litros de inicio de dia, o purga para futuros calculos
+     * obtenemos el valor del contador de litros de inicio de dia
      */
     protected function getInitLitersToday()
     {
@@ -180,24 +173,14 @@ class User extends Authenticatable
             ->whereHas(
                 'record_type',
                 fn($q) =>
-                $q->where('name', RecordType::TYPES[2]) //purga
+                $q->where('name', RecordType::TYPES[0]) //inicio de dia, 
             )
             ->first();
-        if (!$init_liters) {
-            $init_liters = $this->records()
-                ->whereDate('created_at', today())
-                ->whereHas(
-                    'record_type',
-                    fn($q) =>
-                    $q->where('name', RecordType::TYPES[0]) //inicio de dia, 
-                )
-                ->first();
-        }
         return $init_liters->value;
     }
 
     /**
-     * retorna la diferencia de litros entre el fin de turno y el (inicio | purga) del usuario
+     * retorna la diferencia de litros entre el fin de turno y el inicio de turno del usuario
      */
     protected function getCounterLiters()
     {
@@ -219,16 +202,13 @@ class User extends Authenticatable
         $max_counter = 9999;
         // Lógica de diferencia con reinicio
         if ($end_value >= $init_liters) {
-            logger('GCL: $end_value - $init_liters: >>>>' . ($end_value - $init_liters));
+            logger('getCounterLiters: $end_value - $init_liters: >>>>' . ($end_value - $init_liters));
             return $end_value - $init_liters;
         } else {
-            logger('GCL: $max_counter - $init_liters) + $end_value: >>>>' . (($max_counter - $init_liters) + $end_value));
+            logger('getCounterLiters: $max_counter - $init_liters) + $end_value: >>>>' . (($max_counter - $init_liters) + $end_value));
             return ($max_counter - $init_liters) + $end_value;
         }
     }
-
-
-
 
     /**
      * The branch that belong to the User

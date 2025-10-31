@@ -374,7 +374,7 @@ return [
         ],
         [
             'text' => 'Ventas',
-            'url' => 'employees-sales',
+            'url' => 'sales',
             'icon' => 'fas fa-dollar-sign',
             'can'  => 'do_sales'
         ],

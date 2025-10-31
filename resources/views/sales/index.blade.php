@@ -1,170 +1,196 @@
 @extends('adminlte::page')
 
-@section('title', 'Dashboard')
+@section('title', 'Registrar Venta')
 
 @section('content_header')
-    <x-header-section title="Resumen de Ventas" />
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="mb-0">Registrar Venta</h1>
+        <h1 id="total-sales" class="badge bg-success">
+            Total: ${{ number_format($totalSales, 2) }}
+        </h1>
+    </div>
 @stop
 
 @section('content')
+    @php
+        $errorMsg = '';
+        $canDoASale = auth()->user()->canDoASale($errorMsg);
+    @endphp
 
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Ventas por empleado - Semana actual</h5>
-                </div>
-                <div class="card-body p-0">
-                    {{-- Contenedor responsive con scroll horizontal --}}
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped mb-0">
-                            <thead class="table-primary text-center">
-                                <tr>
-                                    <th>Empleado</th>
-                                    <th>Lunes</th>
-                                    <th>Martes</th>
-                                    <th>Miércoles</th>
-                                    <th>Jueves</th>
-                                    <th>Viernes</th>
-                                    <th>Sábado</th>
-                                    <th>Domingo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($ventasPorEmpleadoProcesadas as $empleado)
-                                    <tr>
-                                        <td>{{ $empleado['empleado'] }}</td>
-                                        @foreach ($empleado['ventas'] as $venta)
-                                            <td>${{ number_format($venta, 2) }}</td>
-                                        @endforeach
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+    @if (!$canDoASale)
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i> {{ $errorMsg }}
+        </div>
+    @endif
+    <div class="row mb-4">
+        @foreach ($products as $product)
+            <div class="col-md-3">
+                <div class="card text-center product-card shadow-lg" data-id="{{ $product->id }}"
+                    data-name="{{ $product->name }}" data-price="{{ $product->price }}" style="cursor: pointer;">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ $product->name }}</h5>
+                        <p class="card-text h4 text-success">
+                            ${{ number_format($product->price, 2) }}
+                        </p>
+                        <small class="text-muted">Presiona para vender</small>
                     </div>
                 </div>
             </div>
+        @endforeach
+    </div>
+
+    <!-- Tabla de ventas con DataTables -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Mis Ventas</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="sales-table" class="table table-bordered table-striped w-100">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unitario</th>
+                            <th>Total</th>
+                            <th>Hora</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- DataTables llenará esto -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">Ventas por empleado - Semana actual</h5>
-                </div>
-                <div class="card-body p-0">
-                    <table class="table table-striped table-sm mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Empleado</th>
-                                <th class="text-end">Total de la semana</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($ventasSemanaPorEmpleado as $venta)
-                                <tr>
-                                    <td>{{ $venta->user->full_name ?? 'Desconocido' }}</td>
-                                    <td class="text-end">${{ number_format($venta->total_semana, 2) }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="2" class="text-center text-muted">Sin ventas en la semana</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row">
-        <!-- Gráfica 1: Ventas por Día -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white">Ventas de la Semana vs Promedio Histórico</div>
-                <div class="card-body">
-                    <canvas id="ventasSemanaChart"></canvas>
-                </div>
-            </div>
-        </div>
+@stop
 
-        <!-- Gráfica 2: Ventas por Producto -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-success text-white">Ventas por Producto (Semana Actual)</div>
-                <div class="card-body">
-                    <canvas id="productosChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
+@section('css')
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap4.min.css">
 @stop
 
 @section('js')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap4.min.js"></script>
+
+    <!-- SweetAlert -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
-        // === Gráfica 1: Ventas por Día ===
-        const ctx1 = document.getElementById('ventasSemanaChart').getContext('2d');
-        new Chart(ctx1, {
-            type: 'bar',
-            data: {
-                labels: @json($nombresDias),
-                datasets: [{
-                    label: 'Ventas ($)',
-                    data: @json($datosVentas),
-                    backgroundColor: @json($coloresDias),
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Monto ($)'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
+        $(document).ready(function() {
+            $('#sales-table').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: "{{ route('sales.data') }}",
+                columns: [{
+                        data: 'product.name',
+                        name: 'product.name'
                     },
-                    tooltip: {
-                        callbacks: {
-                            label: ctx => `$${ctx.parsed.y.toLocaleString()}`
-                        }
+                    {
+                        data: 'amount',
+                        name: 'amount'
+                    },
+                    {
+                        data: 'price_unit',
+                        name: 'price_unit'
+                    },
+                    {
+                        data: 'total',
+                        name: 'total'
+                    },
+                    {
+                        data: 'created_at',
+                        name: 'created_at'
+                    },
+                    {
+                        data: 'actions',
+                        name: 'actions',
+                        orderable: false,
+                        searchable: false
+                    } // 👈
+                ],
+                language: {
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                },
+                order: [
+                    [4, 'desc']
+                ],
+                responsive: true,
+                autoWidth: false
+            });
+
+
+            // Acción de vender producto
+            $(".product-card").on("click", function() {
+                let productId = $(this).data("id");
+                let name = $(this).data("name");
+                let price = $(this).data("price");
+
+                Swal.fire({
+                    title: `Vender: ${name}`,
+                    text: `Precio unitario: $${parseFloat(price).toFixed(2)}`,
+                    input: 'number',
+                    inputAttributes: {
+                        min: 1,
+                        step: 1
+                    },
+                    inputValue: 1,
+                    inputLabel: 'Cantidad',
+                    inputPlaceholder: 'Ingrese cantidad vendida',
+                    showCancelButton: true,
+                    confirmButtonText: 'Registrar venta',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed && result.value > 0) {
+                        $.ajax({
+                            url: "{{ route('sales.store') }}",
+                            method: "POST",
+                            data: {
+                                _token: "{{ csrf_token() }}",
+                                product_id: productId,
+                                amount: result.value
+                            },
+                            success: function(response) {
+                                Swal.fire('¡Éxito!', 'Venta registrada.', 'success');
+                                $('#sales-table').DataTable().ajax
+                                    .reload();
+                                // Actualizar total
+                                $('#total-sales').text(
+                                    `Total: $${parseFloat(response.totalSales).toFixed(2)}`
+                                );
+                            },
+                            error: function(xhr) {
+                                let errorMessage = xhr.responseJSON?.message ??
+                                    'No se pudo registrar la venta';
+                                Swal.fire('Error', errorMessage, 'error');
+                            }
+                        });
                     }
-                }
-            }
+                });
+            });
         });
 
-        // === Gráfica 2: Ventas por Producto ===
-        const ctx2 = document.getElementById('productosChart').getContext('2d');
-        new Chart(ctx2, {
-            type: 'doughnut',
-            data: {
-                labels: @json($productos),
-                datasets: [{
-                    data: @json($totalesProductos),
-                    backgroundColor: @json($coloresProductos),
-                    borderColor: '#fff',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: ctx => `${ctx.label}: $${ctx.parsed.toLocaleString()}`
-                        }
-                    }
+        function confirmDelete(saleId) {
+            Swal.fire({
+                title: '¿Está seguro?',
+                text: "¡No podrás revertir esto!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('delete-form-' + saleId).submit();
                 }
-            }
-        });
+            })
+        }
     </script>
 @stop

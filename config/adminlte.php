@@ -354,6 +354,18 @@ return [
         //     ]
         // ],
         [
+            'text' => 'Resumen Ventas',
+            'url' => 'sales/summary',
+            'icon' => 'fas fa-folder',
+            'can' => 'manage_products'
+        ],
+        [
+            'text' => 'Historial Ventas',
+            'url' => 'historic-sales',
+            'icon' => 'fas fa-history',
+            'can' => 'manage_products'
+        ],
+        [
             'text' => 'Empleados',
             'url' => 'users',
             'icon' => 'fas fa-fw fa-user',
@@ -374,7 +386,7 @@ return [
         ],
         [
             'text' => 'Ventas',
-            'url' => 'employees-sales',
+            'url' => 'sales',
             'icon' => 'fas fa-dollar-sign',
             'can'  => 'do_sales'
         ],

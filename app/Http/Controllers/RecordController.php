@@ -35,6 +35,8 @@ class RecordController extends Controller
                 return $record->created_at ? $record->created_at->locale('es')->isoFormat('dddd hh:mm A | D MMMM YYYY') : '';
             })->addColumn('evidence', function ($row) {
                 return view('records.evidence', compact('row'))->render();
+            })->editColumn('value', function ($row) {
+                return $row->value ?? 'N/A';
             })->rawColumns(['actions', 'evidence'])->make(true);
     }
 
@@ -90,15 +92,14 @@ class RecordController extends Controller
                     ->withErrors(['error' => $result['message']])
                     ->withInput(); // Esto preserva los valores del formulario
             }
-
             return redirect()
                 ->route('records.index')
                 ->with('success', 'Registro creado correctamente');
         } catch (\Exception $e) {
-            return [
-                'success' => false,
-                'message' => $e->getMessage()
-            ];
+            return redirect()
+                ->route('records.index')
+                ->withErrors(['error' => $e->getMessage()])
+                ->withInput(); // Esto preserva los valores del formulario
         }
     }
 

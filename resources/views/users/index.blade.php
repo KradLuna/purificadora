@@ -20,6 +20,7 @@
                     <tr>
                         <th>Nombre</th>
                         <th>Teléfono</th>
+                        <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -77,6 +78,13 @@
                         name: 'phone_number'
                     },
                     {
+                        data: 'is_active',
+                        name: 'is_active',
+                        render: function(data, type, row) {
+                            return data == 1 ? 'Activo' : 'Inactivo';
+                        }
+                    },
+                    {
                         data: 'action',
                         name: 'action',
                         orderable: false,
@@ -84,7 +92,7 @@
                     }
                 ],
                 language: {
-                    url: "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
                 },
                 responsive: true,
                 autoWidth: false

@@ -67,10 +67,10 @@ class Record extends Model
                     $record->evidence_path = $data['evidence']->store('evidences', 'public');
                 }
                 $record->save();
-
                 if ($record->record_type->is_end_work_shift) { // cierre de turno
                     if (!auth()->user()->saleVsCounterIsOk()) {
-                        throw new Exception('El contador de litros y el conteo de ventas tiene un desfase mayor a 20L.');
+                        $allowed_range = config('constants.liters.allowed_range');
+                        throw new Exception("Verifica el valor del contador de litros, ya que la sumatoria de litros en ventas tiene un desfase mayor a {$allowed_range}L con el contador.");
                     }
                 }
                 return [

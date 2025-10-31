@@ -149,23 +149,10 @@
                     ],
                     responsive: true, // <-- esto hace que sea responsive
                     language: {
-                        url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                        url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
                     }
                 });
             });
-
-
-            // $('#records-table').DataTable({
-            //     processing: true,
-            //     serverSide: true,
-            //     ajax: "{{ route('records.data') }}",
-            //     columns: columns,
-            //     language: {
-            //         url: "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
-            //     },
-            //     responsive: true,
-            //     autoWidth: false
-            // });
         });
 
         function confirmDelete(recordId) {

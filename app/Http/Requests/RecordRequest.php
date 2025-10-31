@@ -27,7 +27,14 @@ class RecordRequest extends FormRequest
         $flexRule = $this->getMethod() == 'POST' ? 'required' : 'nullable';
         return [
             'record_type_id' => [$flexRule, Rule::exists('record_types', 'id')],
-            'value' => [$flexRule, 'regex:/^\d+(\.\d{1,2})?$/'],
+            'value' => [
+                'nullable',
+                'regex:/^\d+(\.\d{1,2})?$/',
+                Rule::requiredIf(function () {
+                    return $this->getMethod() == 'POST'
+                        && (int) $this->record_type_id !== 3; // id purga
+                })
+            ],
             'evidence' => [
                 'nullable',
                 'file',
@@ -35,7 +42,7 @@ class RecordRequest extends FormRequest
                 'max:2048',
                 Rule::requiredIf(function () {
                     return $this->getMethod() == 'POST'
-                        && (int) $this->record_type_id !== 2; // id específico
+                        && (int) $this->record_type_id !== 2; // id corte de caja
                 })
             ],
             'record_date' => ['sometimes', 'date_format:Y-m-d\TH:i']

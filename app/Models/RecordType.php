@@ -12,7 +12,7 @@ class RecordType extends Model
     use HasFactory;
 
     public const TYPES = [
-        'Inicio de turno',
+        'Inicio de turno', //id_1
         'Corte de caja',
         'Purga',
         'Fin de turno',

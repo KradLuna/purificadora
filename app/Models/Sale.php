@@ -21,7 +21,8 @@ class Sale extends Model
         'employee_id',
         'product_id',
         'amount',
-        'total'
+        'total',
+        'created_at'
     ];
 
     /**
@@ -73,11 +74,31 @@ class Sale extends Model
         $this->save();
     }
 
-    public static function sumAllDailySales()
+    public function sumAllDailySales()
     {
-        return Sale::whereDate('created_at', today())->sum('total');
+        return Sale::whereDate('created_at', today())
+            ->where('employee_id', $this->user->id)
+            ->sum('total');
     }
 
+
+
+    /**
+     * HISTORIC
+     */
+    public static function historicStore(array $data)
+    {
+        $sale = Sale::create([
+            'employee_id' => $data['employee_id'],
+            'product_id' => $data['product_id'],
+            'amount' => $data['amount'],
+            'total' => $data['total'],
+        ]);
+        return [
+            'success' => true,
+            'sale' => $sale
+        ];
+    }
     /**
      * RELATIONSHIPS
      */

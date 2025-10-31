@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\HistoricSaleRequest;
 use App\Http\Requests\SaleRequest;
 use App\Models\Product;
 use App\Models\Sale;
@@ -43,6 +44,115 @@ class SaleController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function index()
+    {
+        $user = auth()->user();
+        // Filtrar ventas del empleado logueado
+        $sales = Sale::with('product')
+            ->where('employee_id', $user->id)
+            ->whereDate('created_at', today())
+            ->latest()
+            ->get();
+
+        $totalSales = $sales->sum(function ($sale) {
+            return $sale->amount * $sale->product->price;
+        });
+
+        $products = Product::getActivedProducts();
+
+        return view('sales.index', compact('products', 'sales', 'totalSales'));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(SaleRequest $request)
+    {
+        $result = Sale::logicalStore($request->validated());
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], 422); // código 422: error de validación
+        }
+        $totalSales = $result['sale']->sumAllDailySales();
+        return response()->json(['success' => true, 'totalSales' => $totalSales]);
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  \App\Models\Sale  $sale
+     * @return \Illuminate\Http\Response
+     */
+    public function show(Sale $sale)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  \App\Models\Sale  $sale
+     * @return \Illuminate\Http\Response
+     */
+    public function edit(Sale $sale)
+    {
+        $products = Product::getActivedProducts();
+        return view('sales.edit', compact('sale', 'products'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Sale  $sale
+     * @return \Illuminate\Http\Response
+     */
+    public function update(SaleRequest $request, Sale $sale)
+    {
+        $sale->logicalUpdate($request->validated());
+        return redirect()->route('sales.index')
+            ->with('success', 'Venta actualizada correctamente.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  \App\Models\Sale  $sale
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(Sale $sale)
+    {
+        $sale->delete();
+        return redirect()->route('sales.index')->with('success', 'Registro eliminado correctamente.');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function historicStore(HistoricSaleRequest $request)
+    {
+        $totalSales = Sale::sumAllDailySales();
+        return response()->json(['success' => true, 'totalSales' => $totalSales]);
+    }
+
+    public function summary()
     {
         $user = auth()->user();
 
@@ -155,7 +265,7 @@ class SaleController extends Controller
             ->with('user:id,full_name')
             ->get();
 
-        return view('sales.index', [
+        return view('sales.summary', [
             'nombresDias' => $nombresEsp,
             'datosVentas' => $datosVentas,
             'coloresDias' => $colores,
@@ -165,83 +275,5 @@ class SaleController extends Controller
             'ventasPorEmpleadoProcesadas' => $ventasPorEmpleadoProcesadas,
             'ventasSemanaPorEmpleado' => $ventasSemanaPorEmpleado
         ]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(SaleRequest $request)
-    {
-        $result = Sale::logicalStore($request->validated());
-        if (!$result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], 422); // código 422: error de validación
-        }
-        $totalSales = Sale::sumAllDailySales();
-        return response()->json(['success' => true, 'totalSales' => $totalSales]);
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Sale  $sale
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Sale $sale)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Sale  $sale
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Sale $sale)
-    {
-        $products = Product::getActivedProducts();
-        return view('sales.edit', compact('sale', 'products'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Sale  $sale
-     * @return \Illuminate\Http\Response
-     */
-    public function update(SaleRequest $request, Sale $sale)
-    {
-        $sale->logicalUpdate($request->validated());
-        return redirect()->route('employees-sales.index')
-            ->with('success', 'Venta actualizada correctamente.');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Sale  $sale
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Sale $sale)
-    {
-        $sale->delete();
-        return redirect()->route('employees-sales.index')->with('success', 'Registro eliminado correctamente.');
     }
 }

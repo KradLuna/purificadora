@@ -16,7 +16,7 @@ class ProductController extends Controller
      */
     public function data()
     {
-        $products = Product::select(['id', 'name', 'price', 'liters']);
+        $products = Product::select(['id', 'name', 'price', 'liters', 'is_active']);
         return DataTables::of($products)
             ->addColumn('action', function ($row) {
                 return view('products.actions', compact('row'))->render();

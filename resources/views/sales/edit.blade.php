@@ -35,7 +35,7 @@
 
                 <div class="form-group mt-3">
                     <button type="submit" class="btn btn-success">Actualizar</button>
-                    <a href="{{ route('employees-sales.index') }}" class="btn btn-secondary">Cancelar</a>
+                    <a href="{{ route('sales.index') }}" class="btn btn-secondary">Cancelar</a>
                 </div>
             </form>
         </div>
