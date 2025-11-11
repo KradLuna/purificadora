@@ -223,8 +223,7 @@ class User extends Authenticatable
             })
             ->whereDate('created_at', today())
             ->latest()
-            ->first()
-            ->value;
+            ->first()?->value ?? 0;
     }
 
     /**
