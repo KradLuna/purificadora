@@ -1,13 +1,13 @@
-@inject('navbarItemHelper', 'JeroenNoten\LaravelAdminLte\Helpers\NavbarItemHelper')
+{{-- @inject('navbarItemHelper', 'JeroenNoten\LaravelAdminLte\Helpers\NavbarItemHelper')
 
 @if ($navbarItemHelper->isSubmenu($item))
 
-    {{-- Dropdown submenu --}}
+    {{- Dropdown submenu -}}
     @include('adminlte::partials.navbar.dropdown-item-submenu')
 
 @elseif ($navbarItemHelper->isLink($item))
 
-    {{-- Dropdown link --}}
+    {{- Dropdown link -}}
     @include('adminlte::partials.navbar.dropdown-item-link')
 
-@endif
+@endif --}}

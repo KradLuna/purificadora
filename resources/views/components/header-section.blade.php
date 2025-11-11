@@ -3,7 +3,7 @@
     <h1 class="m-0 text-dark">{{ $title }}</h1>
 
     <!-- Usuario y botón a la derecha -->
-    <div class="d-flex flex-column align-items-end text-right">
+    {{-- <div class="d-flex flex-column align-items-end text-right">
         <span class="text-primary font-weight-bold mb-1">
             <i class="fas fa-user mr-1"></i> {{ auth()->user()->full_name }}
         </span>
@@ -13,5 +13,8 @@
                 <i class="fas fa-sign-out-alt"></i> Cerrar sesión
             </button>
         </form>
-    </div>
+    </div> --}}
+    {{-- se paso a al archivo: 
+    resources\views\vendor\adminlte\partials\navbar\menu-item-dropdown-user-menu.blade.php
+    --}}
 </div>

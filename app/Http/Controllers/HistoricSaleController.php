@@ -66,7 +66,10 @@ class HistoricSaleController extends Controller
      */
     public function store(HistoricSaleRequest $request)
     {
-        Sale::create($request->validated());
+        $data = $request->validated();
+        // ajustamos al ultimo minuto del dia (para saber que las hizo un admins)
+        $data['created_at'] = $data['created_at'] . ' 23:59:00';
+        Sale::create($data);
         // if (!$result['success']) { //no deberia haber algun error
         //     return response()->json([
         //         'success' => false,

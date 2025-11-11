@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\HistoricSaleRequest;
 use App\Http\Requests\SaleRequest;
 use App\Models\Product;
+use App\Models\Record;
+use App\Models\RecordType;
 use App\Models\Sale;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -22,10 +24,7 @@ class SaleController extends Controller
         $user = auth()->user();
         $errorMsg = '';
         $canDoASale = $user->canDoASale($errorMsg);
-        $sales = Sale::with('product')
-            ->where('employee_id', $user->id)
-            ->whereDate('created_at', today())
-            ->latest();
+        $sales = $user->getCurrentSales(false);
 
         return DataTables::eloquent($sales)
             ->addColumn('price_unit', fn($sale) => '$' . number_format($sale->product->price, 2))
@@ -46,20 +45,19 @@ class SaleController extends Controller
     public function index()
     {
         $user = auth()->user();
-        // Filtrar ventas del empleado logueado
-        $sales = Sale::with('product')
-            ->where('employee_id', $user->id)
-            ->whereDate('created_at', today())
-            ->latest()
-            ->get();
 
-        $totalSales = $sales->sum(function ($sale) {
-            return $sale->amount * $sale->product->price;
-        });
+        $errorMsg = '';
+        $canDoASale = $user->canDoASale($errorMsg);
+        
+        $sales = $user->getCurrentSales(true);
+
+        $totalSales = $user->getCurrentTotalSales();
 
         $products = Product::getActivedProducts();
 
-        return view('sales.index', compact('products', 'sales', 'totalSales'));
+        $counter = $user->getCurrentLitersCounter();
+
+        return view('sales.index', compact('products', 'sales', 'totalSales', 'counter', 'canDoASale', 'errorMsg'));
     }
 
     /**
@@ -80,6 +78,7 @@ class SaleController extends Controller
      */
     public function store(SaleRequest $request)
     {
+        $user = auth()->user();
         $result = Sale::logicalStore($request->validated());
         if (!$result['success']) {
             return response()->json([
@@ -87,8 +86,10 @@ class SaleController extends Controller
                 'message' => $result['message'],
             ], 422); // código 422: error de validación
         }
-        $totalSales = $result['sale']->sumAllDailySales();
-        return response()->json(['success' => true, 'totalSales' => $totalSales]);
+        // $totalSales = $result['sale']->sumAllDailySales();
+        $totalSales = $user->getCurrentTotalSales();
+        $counter = $user->getCurrentLitersCounter();
+        return response()->json(['success' => true, 'totalSales' => $totalSales, 'counter' => $counter]);
     }
 
     /**

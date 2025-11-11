@@ -12,11 +12,6 @@
 @stop
 
 @section('content')
-    @php
-        $errorMsg = '';
-        $canDoASale = auth()->user()->canDoASale($errorMsg);
-    @endphp
-
     @if (!$canDoASale)
         <div class="alert alert-danger">
             <i class="fas fa-exclamation-triangle"></i> {{ $errorMsg }}
@@ -42,7 +37,12 @@
     <!-- Tabla de ventas con DataTables -->
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title mb-0">Mis Ventas</h3>
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="card-title mb-0">Mis Ventas</h2>
+                <h2 id="total-liters" class="badge bg-info">
+                    Contador: {{ number_format($counter, 0) }}Lts
+                </h2>
+            </div>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -113,7 +113,7 @@
                         name: 'actions',
                         orderable: false,
                         searchable: false
-                    } // 👈
+                    }
                 ],
                 language: {
                     url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
@@ -163,6 +163,9 @@
                                 // Actualizar total
                                 $('#total-sales').text(
                                     `Total: $${parseFloat(response.totalSales).toFixed(2)}`
+                                );
+                                $('#total-liters').text(
+                                    `Contador: ${parseFloat(response.counter).toFixed(0)}Lts`
                                 );
                             },
                             error: function(xhr) {

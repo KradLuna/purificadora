@@ -31,7 +31,7 @@ Route::get('/', function () {
         return redirect()->route('login');
     }
     if ($user->hasRole(User::ROLES[0])) { // Admin
-        return redirect()->route('sales.index');
+        return redirect()->route('sales.summary');
     }
     if ($user->hasRole(User::ROLES[1])) { // Empleado
         return redirect()->route('records.index');
@@ -44,9 +44,6 @@ Route::get('/', function () {
  */
 //. User::ROLES[0]
 Route::middleware(['auth', 'role:' . User::ROLES[0]])->group(function () { //son los roles: administrador
-    Route::get('/admin', function () {
-        return view('admin');
-    });
     Route::get('users/data', [UserController::class, 'data'])->name('users.data');
     Route::resource('users', UserController::class);
     Route::get('products/data', [ProductController::class, 'data'])->name('products.data');

@@ -70,7 +70,7 @@ class LoginController extends Controller
     {
         $user = Auth::user();
         if ($user->isAdmin) {
-            return route('sales.index');
+            return route('sales.summary');
         }
 
         if ($user->hasRole(User::ROLES[1])) {

@@ -114,6 +114,17 @@ class Record extends Model
         }
     }
 
+    public static function getCounterOfEmployeeID(int $employee_id): float
+    {
+        return Record::where('user_id', $employee_id)
+            ->whereDate('created_at', today())
+            ->whereHas('record_type', function ($q) {
+                $q->where('name', RecordType::TYPES[0]);
+            })
+            ->orderByDesc('id')
+            ->value('value'); //obtiene el valor de la columna value del primer registro que cumpla con las condiciones,
+    }
+
     protected static function rules(String $actual_action, User $user): String
     {
         /*array{

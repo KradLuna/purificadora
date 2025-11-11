@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,6 +15,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use PhpParser\Node\Expr\Cast\Double;
 
 class User extends Authenticatable
 {
@@ -208,6 +210,58 @@ class User extends Authenticatable
             logger('getCounterLiters: $max_counter - $init_liters) + $end_value: >>>>' . (($max_counter - $init_liters) + $end_value));
             return ($max_counter - $init_liters) + $end_value;
         }
+    }
+
+    /**
+     * obtiene el valor del ultimo registro de inicio de turno
+     */
+    protected function getLastShiftStartValue(): float
+    {
+        return $this->records()
+            ->whereHas('record_type', function ($q) {
+                $q->where('name', RecordType::TYPES[0]); //inicio de turno
+            })
+            ->whereDate('created_at', today())
+            ->latest()
+            ->first()
+            ->value;
+    }
+
+    /**
+     * obtiene las ventas del empleado, las une con el proudcto para obtener los litros
+     * los suma y regresa el total
+     */
+    public function getCurrentLitersCounter(): float
+    {
+        $sales_liters = $this->sales()
+            ->join('products', 'products.id', '=', 'sales.product_id')
+            ->whereDate('sales.created_at', today())
+            ->sum(DB::raw('products.liters * sales.amount'));
+
+        return $this->getLastShiftStartValue() + $sales_liters;
+    }
+
+    /**
+     * obtiene las ventas del empleado, las une con el proudcto para obtener los litros
+     * los suma y regresa el total
+     */
+    public function getCurrentTotalSales(): float
+    {
+        return $this->sales()
+            ->join('products', 'products.id', '=', 'sales.product_id')
+            ->whereDate('sales.created_at', today())
+            ->sum(DB::raw('products.price * sales.amount'));
+    }
+
+    /**
+     * @param true para obtenerlo como collection // para obtenerlo como builder
+     */
+    public function getCurrentSales(bool $inArray)
+    {
+        if ($inArray) {
+            return $this->sales()->whereDate('created_at', today())->latest()->get();
+        }
+        return $this->sales()->with('product')->whereDate('created_at', today())->latest(); //lo retorna como builder para los datas
     }
 
     /**

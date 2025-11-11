@@ -28,7 +28,7 @@ class HistoricSaleRequest extends FormRequest
             'product_id' => ['required', Rule::exists('products', 'id')->whereNull('deleted_at')],
             'employee_id' => ['required', Rule::exists('users', 'id')->whereNull('deleted_at')],
             'amount' => ['required', 'integer', 'min:1'],
-            'created_at' => ['required', 'date', 'before_or_equal:today'],
+            'created_at' => ['required', 'date', 'before_or_equal:now'],
             'total' => ['required', 'regex:/^\d+(\.\d{1,2})?$/'],
         ];
     }

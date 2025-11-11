@@ -1,3 +1,4 @@
+{{-- ESTE ES EL MENU LATERAL *NO QUITAR* --}}
 <li class="nav-item">
     <a class="nav-link" data-widget="pushmenu" href="#"
         @if(config('adminlte.sidebar_collapse_remember'))

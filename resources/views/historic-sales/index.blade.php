@@ -1,6 +1,6 @@
 @extends('adminlte::page')
 
-@section('title', 'Gestión de Registros')
+@section('title', 'Historial de Ventas')
 
 @section('content_header')
     <h1>Historial de Ventas</h1>
@@ -16,22 +16,24 @@
         </div>
 
         <div class="card-body">
-            <table id="historic-sales-table" class="table table-bordered table-striped w-100">
-                <thead>
-                    <tr>
-                        <th>Id</th>
-                        <th>Empleado</th>
-                        <th>Producto</th>
-                        <th>Cantidad</th>
-                        <th>Total ($)</th>
-                        <th>Fecha</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- DataTables llenará esto automáticamente -->
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table id="historic-sales-table" class="table table-bordered table-striped w-100">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Empleado</th>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Total ($)</th>
+                            <th>Fecha</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- DataTables llenará esto automáticamente -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 @stop
@@ -69,27 +71,38 @@
                 processing: true,
                 serverSide: true,
                 ajax: "{{ route('historic-sales.data') }}",
-                columns: [
-                    { data: 'id', name: 'id' },
-                    { data: 'employee_name', name: 'employee_name' },
-                    { data: 'product_name', name: 'product_name' },
-                    { data: 'amount', name: 'amount' },
-                    { 
-                        data: 'total', 
+                columns: [{
+                        data: 'id',
+                        name: 'id'
+                    },
+                    {
+                        data: 'employee_name',
+                        name: 'employee_name'
+                    },
+                    {
+                        data: 'product_name',
+                        name: 'product_name'
+                    },
+                    {
+                        data: 'amount',
+                        name: 'amount'
+                    },
+                    {
+                        data: 'total',
                         name: 'total',
                         render: function(data) {
                             return '$' + parseFloat(data).toFixed(2);
                         }
                     },
-                    { 
-                        data: 'created_at', 
+                    {
+                        data: 'created_at',
                         name: 'created_at'
                     },
-                    { 
-                        data: 'action', 
-                        name: 'action', 
-                        orderable: false, 
-                        searchable: false 
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false
                     }
                 ],
                 language: {
