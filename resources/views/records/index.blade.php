@@ -1,6 +1,6 @@
 @extends('adminlte::page')
 
-@section('title', 'Gestión de Registros')
+@section('title', 'Registros')
 
 @section('content_header')
     <x-header-section title="" />

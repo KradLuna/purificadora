@@ -3,11 +3,16 @@
 @section('title', 'Registrar Venta')
 
 @section('content_header')
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <h1 class="mb-0">Registrar Venta</h1>
         <h1 id="total-sales" class="badge bg-success">
             Total: ${{ number_format($totalSales, 2) }}
         </h1>
+    </div>
+    <div class="d-flex justify-content-end">
+        <h2><span id="total-liters" class="badge bg-info px-2 py-1">
+                Contador: {{ number_format($counter, 0) }} Lts
+            </span></h2>
     </div>
 @stop
 
@@ -39,9 +44,6 @@
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center">
                 <h2 class="card-title mb-0">Mis Ventas</h2>
-                <h2 id="total-liters" class="badge bg-info">
-                    Contador: {{ number_format($counter, 0) }}Lts
-                </h2>
             </div>
         </div>
         <div class="card-body">

@@ -48,7 +48,7 @@ class SaleController extends Controller
 
         $errorMsg = '';
         $canDoASale = $user->canDoASale($errorMsg);
-        
+
         $sales = $user->getCurrentSales(true);
 
         $totalSales = $user->getCurrentTotalSales();
@@ -86,7 +86,6 @@ class SaleController extends Controller
                 'message' => $result['message'],
             ], 422); // código 422: error de validación
         }
-        // $totalSales = $result['sale']->sumAllDailySales();
         $totalSales = $user->getCurrentTotalSales();
         $counter = $user->getCurrentLitersCounter();
         return response()->json(['success' => true, 'totalSales' => $totalSales, 'counter' => $counter]);

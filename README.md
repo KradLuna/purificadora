@@ -39,8 +39,28 @@ Da clic en Start o Execute.
 
 
 # VPS
-## Git
+## local
+- recordemos hacer:
+> npm run build
+
+git add .
+git commit -m "Actualización: ajustes locales"
+git push origin main
+
+## Git - remoto
 - actualizar cambios que se hicieron en 
 ruta del proyecto:
 > cd /var/www/purificadora/
 > git pull
+
+### comando utiles en remoto:
+- Si cambiaste código PHP, paquetes, migraciones o assets,
+> composer install --no-dev --optimize-autoloader
+> php artisan optimize
+
+- en caso que queramos reforzar el optimize:
+```
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```

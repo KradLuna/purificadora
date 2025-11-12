@@ -1,6 +1,6 @@
 @extends('adminlte::page')
 
-@section('title', 'Dashboard')
+@section('title', 'Resumen de Ventas')
 
 @section('content_header')
     <x-header-section title="Resumen de Ventas" />
