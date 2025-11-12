@@ -38,7 +38,7 @@ En DBeaver:
 Da clic en Start o Execute.
 
 
-# VPS
+# VPS - DEPLOY
 ## local
 - recordemos hacer:
 > npm run build
