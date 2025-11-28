@@ -54,13 +54,14 @@ ruta del proyecto:
 > git pull
 
 ### comando utiles en remoto:
-- Si cambiaste código PHP, paquetes, migraciones o assets,
-> composer install --no-dev --optimize-autoloader
-> php artisan optimize
-
-- en caso que queramos reforzar el optimize:
+- si sale algo de rutas sin permisos:
 ```
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 ```
+
+- Si cambiaste código PHP, paquetes, migraciones o assets,
+> composer install --no-dev --optimize-autoloader
+> php artisan optimize
+

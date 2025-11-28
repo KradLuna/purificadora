@@ -237,7 +237,7 @@ class User extends Authenticatable
             ->whereDate('sales.created_at', today())
             ->sum(DB::raw('products.liters * sales.amount'));
 
-        return $this->getLastShiftStartValue() + $sales_liters;
+        return ($this->getLastShiftStartValue() + $sales_liters) % 9999;
     }
 
     /**

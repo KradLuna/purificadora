@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\HistoricSaleRequest;
 use App\Http\Requests\SaleRequest;
 use App\Models\Product;
-use App\Models\Record;
-use App\Models\RecordType;
 use App\Models\Sale;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
