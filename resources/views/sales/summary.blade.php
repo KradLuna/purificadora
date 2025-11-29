@@ -67,24 +67,31 @@
                                     <td>{{ $venta->user->full_name ?? 'Desconocido' }}</td>
                                     <td class="text-end">${{ number_format($venta->total_semana, 2) }}</td>
                                 </tr>
+
                             @empty
                                 <tr>
                                     <td colspan="2" class="text-center text-muted">Sin ventas en la semana</td>
                                 </tr>
                             @endforelse
                         </tbody>
+                        <tfoot>
+                            <tr class="table-primary fw-bold">
+                                <td>Total: </td>
+                                <td class="text-end">${{ number_format($totalVentasSemana, 2) }}</td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
         </div>
     </div>
     <div class="row">
-        <!-- Gráfica 1: Ventas por Día -->
+        <!-- Gráfica 1: Ventas históricas semanales -->
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header bg-primary text-white">Ventas de la Semana vs Promedio Histórico</div>
+                <div class="card-header bg-primary text-white">Ventas históricas semanales</div>
                 <div class="card-body">
-                    <canvas id="ventasSemanaChart"></canvas>
+                    <canvas id="ventasPorSemanaChart"></canvas>
                 </div>
             </div>
         </div>
@@ -103,23 +110,29 @@
 
 @section('js')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
     <script>
-        // === Gráfica 1: Ventas por Día ===
-        const ctx1 = document.getElementById('ventasSemanaChart').getContext('2d');
-        new Chart(ctx1, {
+        // === Gráfica: Ventas por Semana (Horizontal con Data Labels) ===
+        const ctxSemana = document.getElementById('ventasPorSemanaChart').getContext('2d');
+
+        new Chart(ctxSemana, {
             type: 'bar',
             data: {
-                labels: @json($nombresDias),
+                labels: @json($labels),
                 datasets: [{
                     label: 'Ventas ($)',
-                    data: @json($datosVentas),
-                    backgroundColor: @json($coloresDias),
+                    data: @json($data),
+                    backgroundColor: @json($colores),
                     borderWidth: 1
                 }]
             },
+            plugins: [ChartDataLabels], // <-- habilitamos el plugin
             options: {
+                indexAxis: 'y',
                 scales: {
-                    y: {
+                    x: {
                         beginAtZero: true,
                         title: {
                             display: true,
@@ -131,17 +144,28 @@
                     legend: {
                         display: false
                     },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'right',
+                        formatter: value => `$${value.toLocaleString()}`,
+                        font: {
+                            weight: 'bold',
+                            size: 13
+                        },
+                        textShadowBlur: 10,
+                        textShadowColor: 'rgba(0, 255, 0, 0.8)',
+                    },
                     tooltip: {
-                        callbacks: {
-                            label: ctx => `$${ctx.parsed.y.toLocaleString()}`
-                        }
+                        enabled: false // el tooltip sigue funcionando si lo quieres
                     }
                 }
             }
         });
 
-        // === Gráfica 2: Ventas por Producto ===
+
+        // === Gráfica 2: Ventas por Producto (con valores visibles) ===
         const ctx2 = document.getElementById('productosChart').getContext('2d');
+
         new Chart(ctx2, {
             type: 'doughnut',
             data: {
@@ -153,6 +177,7 @@
                     borderWidth: 2
                 }]
             },
+            plugins: [ChartDataLabels], // <-- habilitamos el plugin
             options: {
                 plugins: {
                     legend: {
@@ -162,6 +187,16 @@
                         callbacks: {
                             label: ctx => `${ctx.label}: $${ctx.parsed.toLocaleString()}`
                         }
+                    },
+                    datalabels: {
+                        color: '#000',
+                        formatter: value => `$${value.toLocaleString()}`,
+                        font: {
+                            weight: 'bold',
+                            size: 13
+                        },
+                        textShadowBlur: 10,
+                        textShadowColor: 'rgba(255, 255, 255, 1)',
                     }
                 }
             }

@@ -175,31 +175,28 @@ class SaleController extends Controller
             ->keyBy('dia');
 
 
-        // Promedio histórico por día (de todos los lunes, martes, etc.)
-        $promedioHistorico = Sale::select(
-            DB::raw('DAYOFWEEK(created_at) as dia_num'),
-            DB::raw('DAYNAME(created_at) as dia'),
-            DB::raw('AVG(total) as promedio')
-        )
-            ->groupBy(DB::raw('DAYOFWEEK(created_at)'), DB::raw('DAYNAME(created_at)'))
-            ->get()
-            ->keyBy('dia');
+        // Ventas Semanales
+        $weeklySales = DB::table('sales')
+            ->selectRaw('YEAR(created_at) AS anio')
+            ->selectRaw('WEEK(created_at, 1) AS semana')
+            ->selectRaw('SUM(total) AS total_semana')
+            ->groupByRaw('YEAR(created_at), WEEK(created_at, 1)')
+            ->orderBy('anio')
+            ->orderBy('semana')
+            ->get();
 
-
-        $diasSemana = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        $nombresEsp = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-
-        $datosVentas = [];
+        $labels = [];
+        $data = [];
         $colores = [];
 
-        foreach ($diasSemana as $i => $diaIngles) {
-            $totalDia = $ventasSemana[$diaIngles]->total ?? 0;
-            $promedioDia = $promedioHistorico[$diaIngles]->promedio ?? 0;
+        foreach ($weeklySales as $row) {
+            $labels[] = "Semana {$row->semana} ({$row->anio})";
+            $data[] = $row->total_semana;
 
-            $datosVentas[] = round($totalDia, 2);
-            // Verde si >= promedio, rojo si menor
-            $colores[] = $totalDia >= $promedioDia ? '#28a745' : '#dc3545';
+            // Color aleatorio
+            $colores[] = '#' . substr(md5($row->semana . $row->anio), 0, 6);
         }
+
 
         // === Gráfica de Ventas por Producto (Semana actual) ===
         $ventasProductos = Sale::select(
@@ -263,15 +260,19 @@ class SaleController extends Controller
             ->with('user:id,full_name')
             ->get();
 
+        // total
+        $totalVentasSemana = Sale::whereBetween('created_at', [$startOfWeek, $endOfWeek])->sum('total');
+
         return view('sales.summary', [
-            'nombresDias' => $nombresEsp,
-            'datosVentas' => $datosVentas,
-            'coloresDias' => $colores,
+            'labels' => $labels,
+            'data' => $data,
+            'colores' => $colores,
             'productos' => $productos,
             'totalesProductos' => $totalesProductos,
             'coloresProductos' => $coloresProductos,
             'ventasPorEmpleadoProcesadas' => $ventasPorEmpleadoProcesadas,
-            'ventasSemanaPorEmpleado' => $ventasSemanaPorEmpleado
+            'ventasSemanaPorEmpleado' => $ventasSemanaPorEmpleado,
+            'totalVentasSemana' => $totalVentasSemana
         ]);
     }
 }
