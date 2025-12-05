@@ -173,13 +173,46 @@ class SaleController extends Controller
             ->groupBy(DB::raw('DAYOFWEEK(created_at)'), DB::raw('DAYNAME(created_at)'))
             ->get()
             ->keyBy('dia');
+        // PENDIENTE CREAR LA TABLA PARA LAS HORAS
+        $sub = DB::table('records as e')
+            ->select([
+                'e.user_id',
+                DB::raw('TIMESTAMPDIFF(SECOND, e.created_at, s.created_at) AS diff_seconds')
+            ])
+            ->leftJoin('records as s', function ($join) {
+                $join->on('s.user_id', '=', 'e.user_id')
+                    ->where('s.record_type_id', 4)
+                    ->whereRaw('s.created_at = (
+                SELECT MIN(s2.created_at)
+                FROM records s2
+                WHERE s2.user_id = e.user_id
+                  AND s2.record_type_id = 4
+                  AND s2.created_at > e.created_at
+            )');
+            })
+            ->where('e.record_type_id', 1)
+            ->whereRaw('YEARWEEK(e.created_at, 1) = YEARWEEK(CURDATE(), 1)')
+            ->whereNotNull('s.created_at');
 
+        $payment_per_hour = config('constants.payment.per_hour');
 
-        // Ventas Semanales
+        $weeklyPayments = DB::table(DB::raw("({$sub->toSql()}) as t"))
+            ->mergeBindings($sub)
+            ->join('users as U', 'U.id', '=', 't.user_id')
+            ->select([
+                'U.full_name',
+                DB::raw('SEC_TO_TIME(SUM(t.diff_seconds)) AS horas_trabajadas'),
+                DB::raw("ROUND(SUM(t.diff_seconds) / 3600 * $payment_per_hour, 2) AS monto_pagado"),
+            ])
+            ->groupBy('t.user_id', 'U.full_name')
+            ->get();
+
+        // Ventas Semanales (Ventas históricas semanales) // dd($weeklyPayments);
         $weeklySales = DB::table('sales')
             ->selectRaw('YEAR(created_at) AS anio')
             ->selectRaw('WEEK(created_at, 1) AS semana')
             ->selectRaw('SUM(total) AS total_semana')
+            ->whereNull('sales.deleted_at')
             ->groupByRaw('YEAR(created_at), WEEK(created_at, 1)')
             ->orderBy('anio')
             ->orderBy('semana')
@@ -272,7 +305,8 @@ class SaleController extends Controller
             'coloresProductos' => $coloresProductos,
             'ventasPorEmpleadoProcesadas' => $ventasPorEmpleadoProcesadas,
             'ventasSemanaPorEmpleado' => $ventasSemanaPorEmpleado,
-            'totalVentasSemana' => $totalVentasSemana
+            'totalVentasSemana' => $totalVentasSemana,
+            'totalPagoHoras' => $weeklyPayments
         ]);
     }
 }

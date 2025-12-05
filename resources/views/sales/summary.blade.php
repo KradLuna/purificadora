@@ -31,14 +31,18 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach ($ventasPorEmpleadoProcesadas as $empleado)
+                                @forelse ($ventasPorEmpleadoProcesadas as $empleado)
                                     <tr>
                                         <td>{{ $empleado['empleado'] }}</td>
                                         @foreach ($empleado['ventas'] as $venta)
-                                            <td>${{ number_format($venta, 2) }}</td>
+                                            <td class="text-center">${{ number_format($venta, 2) }}</td>
                                         @endforeach
                                     </tr>
-                                @endforeach
+                                @empty
+                                    <tr>
+                                        <td colspan="2" class="text-center text-muted">Sin ventas en la semana</td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -85,13 +89,57 @@
             </div>
         </div>
     </div>
+
+    @php $auxTotal = 0.0; @endphp
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Pago por empleado - Semana actual</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Empleado</th>
+                                <th class="text-end">Horas Trabajadas</th>
+                                <th class="text-end">Monto a Pagar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($totalPagoHoras as $pago)
+                                @php $auxTotal += (float) $pago->monto_pagado; @endphp
+                                <tr>
+                                    <td>{{ $pago->full_name ?? 'Desconocido' }}</td>
+                                    <td class="text-end">${{ $pago->horas_trabajadas }}</td>
+                                    <td class="text-end">${{ number_format($pago->monto_pagado, 2) }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="2" class="text-center text-muted">Sin ventas en la semana</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-primary fw-bold">
+                                <td>Total: </td>
+                                <td></td>
+                                <td class="text-end">${{ number_format($auxTotal, 2) }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Gráfica 1: Ventas históricas semanales -->
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header bg-primary text-white">Ventas históricas semanales</div>
-                <div class="card-body">
-                    <canvas id="ventasPorSemanaChart"></canvas>
+                <div class="card-body" style="overflow-x: auto;">
+                    <canvas id="ventasPorSemanaChart" style="min-width: 500px; max-width: 800px;"></canvas>
                 </div>
             </div>
         </div>
@@ -100,11 +148,13 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header bg-success text-white">Ventas por Producto (Semana Actual)</div>
-                <div class="card-body">
-                    <canvas id="productosChart"></canvas>
+                <div class="card-body" style="overflow-x: auto;">
+                    <canvas id="productosChart" style="min-width: 500px; max-width: 800px;"></canvas>
                 </div>
             </div>
         </div>
+
+
     </div>
 @stop
 
@@ -130,6 +180,8 @@
             },
             plugins: [ChartDataLabels], // <-- habilitamos el plugin
             options: {
+                responsive: true,
+                maintainAspectRatio: false, // <-- importante queremos scroll
                 indexAxis: 'y',
                 scales: {
                     x: {
@@ -145,15 +197,16 @@
                         display: false
                     },
                     datalabels: {
+                        color: '#000',
                         anchor: 'end',
-                        align: 'right',
+                        align: 'left',
                         formatter: value => `$${value.toLocaleString()}`,
                         font: {
                             weight: 'bold',
                             size: 13
                         },
                         textShadowBlur: 10,
-                        textShadowColor: 'rgba(0, 255, 0, 0.8)',
+                        textShadowColor: 'rgba(255, 255, 255, 0.3)',
                     },
                     tooltip: {
                         enabled: false // el tooltip sigue funcionando si lo quieres
@@ -179,6 +232,8 @@
             },
             plugins: [ChartDataLabels], // <-- habilitamos el plugin
             options: {
+                responsive: true,
+                maintainAspectRatio: false, // <-- importante queremos scroll
                 plugins: {
                     legend: {
                         position: 'bottom'

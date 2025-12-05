@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -61,6 +62,7 @@ class Record extends Model
             $user = auth()->user();
             $rule = self::rules($data['record_type_id'], $user);
             if ($rule == "ok") {
+                $data['created_at'] = now();
                 $record = new Record($data);
                 $record->user_id = $user->id;
                 if (isset($data['evidence'])) {
@@ -180,6 +182,34 @@ class Record extends Model
             }
         }
         return "ok";
+    }
+    /**
+     * ATTRIBUTES
+     */
+
+    /**
+     * Se ajusta en fragmentos, menores de 10, entre 1' y 40 y 
+     * Se dispara automáticamente cada vez que asignes created_at.
+     * Usa Carbon para analizar la hora y ajustarla según tus reglas.
+     * Guarda el valor ya redondeado en la BD.
+     */
+    public function setCreatedAtAttribute($value)
+    {
+        $t = Carbon::parse($value);
+        $minute = $t->minute;
+
+        if ($minute <= 10) {
+            // Redondear a la hora exacta
+            $t = $t->startOfHour();
+        } elseif ($minute <= 40) {
+            // Redondear a la media
+            $t = $t->startOfHour()->addMinutes(30);
+        } else {
+            // Redondear a la siguiente hora
+            $t = $t->addHour()->startOfHour();
+        }
+
+        $this->attributes['created_at'] = $t;
     }
     /**
      * RELATIONSHIPS
