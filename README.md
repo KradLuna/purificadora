@@ -53,6 +53,12 @@ ruta del proyecto:
 > cd /var/www/purificadora/
 > git pull
 
+- si queremos modificar el .env
+> la -ls
+> nano .env
+*ctrl + o* y enter para guardar 
+*ctrl + x* me pregunta si guardar damos Y
+
 ### comando utiles en remoto:
 - si sale algo de rutas sin permisos:
 ```

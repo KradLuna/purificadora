@@ -111,7 +111,7 @@
                                 @php $auxTotal += (float) $pago->monto_pagado; @endphp
                                 <tr>
                                     <td>{{ $pago->full_name ?? 'Desconocido' }}</td>
-                                    <td class="text-end">${{ $pago->horas_trabajadas }}</td>
+                                    <td class="text-end">{{ $pago->horas_trabajadas }}</td>
                                     <td class="text-end">${{ number_format($pago->monto_pagado, 2) }}</td>
                                 </tr>
                             @empty
@@ -139,7 +139,7 @@
             <div class="card">
                 <div class="card-header bg-primary text-white">Ventas históricas semanales</div>
                 <div class="card-body" style="overflow-x: auto;">
-                    <canvas id="ventasPorSemanaChart" style="min-width: 500px; max-width: 800px;"></canvas>
+                    <canvas id="ventasPorSemanaChart" style="height: 350px; min-width: 120%; max-width: 120%;"></canvas>
                 </div>
             </div>
         </div>
@@ -149,12 +149,23 @@
             <div class="card">
                 <div class="card-header bg-success text-white">Ventas por Producto (Semana Actual)</div>
                 <div class="card-body" style="overflow-x: auto;">
-                    <canvas id="productosChart" style="min-width: 500px; max-width: 800px;"></canvas>
+                    <canvas id="productosChart" style="min-width: 90%; max-width: 100%;"></canvas>
                 </div>
             </div>
         </div>
 
 
+    </div>
+    <div class="row">
+        <!-- Gráfica 3: Ventas históricas por hora -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">Ventas históricas por hora</div>
+                <div class="card-body" style="overflow-x: auto;">
+                    <canvas id="ventasPorHoraChart" style="height: 400px; min-width: 120%; max-width: 120%;"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 @stop
 
@@ -199,11 +210,14 @@
                     datalabels: {
                         color: '#000',
                         anchor: 'end',
-                        align: 'left',
+                        align: function(context) {
+                            const value = context.dataset.data[context.dataIndex];
+                            return value < 1000 ? 'right' : 'left';
+                        },
                         formatter: value => `$${value.toLocaleString()}`,
                         font: {
                             weight: 'bold',
-                            size: 13
+                            size: 12
                         },
                         textShadowBlur: 10,
                         textShadowColor: 'rgba(255, 255, 255, 0.3)',
@@ -252,6 +266,60 @@
                         },
                         textShadowBlur: 10,
                         textShadowColor: 'rgba(255, 255, 255, 1)',
+                    }
+                }
+            }
+        });
+
+        // === Gráfica 3: Ventas por Hora ===
+        const ctx = document.getElementById('ventasPorHoraChart').getContext('2d');
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: @json($ventasPorHora->pluck('hora')),
+                datasets: [{
+                    label: 'Ventas por hora ($)',
+                    data: @json($ventasPorHora->pluck('venta')),
+                    backgroundColor: @json($colores),
+                    borderWidth: 1
+                }]
+            },
+            plugins: [ChartDataLabels], // <-- habilitamos el plugin
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // <-- importante queremos scroll
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Monto ($)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    datalabels: {
+                        color: '#000',
+                        anchor: 'end',
+                        align: function(context) {
+                            const value = context.dataset.data[context.dataIndex];
+                            return value < 1000 ? 'right' : 'left';
+                        },
+                        formatter: value => `$${value.toLocaleString()}`,
+                        font: {
+                            weight: 'bold',
+                            size: 12
+                        },
+                        textShadowBlur: 10,
+                        textShadowColor: 'rgba(255, 255, 255, 0.3)',
+                    },
+                    tooltip: {
+                        enabled: false // el tooltip sigue funcionando si lo quieres
                     }
                 }
             }

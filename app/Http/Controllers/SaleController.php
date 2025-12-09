@@ -223,7 +223,7 @@ class SaleController extends Controller
         $colores = [];
 
         foreach ($weeklySales as $row) {
-            $labels[] = "Semana {$row->semana} ({$row->anio})";
+            $labels[] = "S{$row->semana} ({$row->anio})";
             $data[] = $row->total_semana;
 
             // Color aleatorio
@@ -293,6 +293,12 @@ class SaleController extends Controller
             ->with('user:id,full_name')
             ->get();
 
+        $salesPerHour = Sale::selectRaw('HOUR(created_at) AS hora, SUM(total) AS venta')
+            ->whereRaw('HOUR(created_at) BETWEEN 9 AND 20')
+            ->groupByRaw('HOUR(created_at)')
+            ->orderBy('hora')
+            ->get();
+
         // total
         $totalVentasSemana = Sale::whereBetween('created_at', [$startOfWeek, $endOfWeek])->sum('total');
 
@@ -306,7 +312,8 @@ class SaleController extends Controller
             'ventasPorEmpleadoProcesadas' => $ventasPorEmpleadoProcesadas,
             'ventasSemanaPorEmpleado' => $ventasSemanaPorEmpleado,
             'totalVentasSemana' => $totalVentasSemana,
-            'totalPagoHoras' => $weeklyPayments
+            'totalPagoHoras' => $weeklyPayments,
+            'ventasPorHora' => $salesPerHour
         ]);
     }
 }
