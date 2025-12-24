@@ -4,12 +4,10 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -69,10 +67,15 @@ class Record extends Model
                     $record->evidence_path = $data['evidence']->store('evidences', 'public');
                 }
                 $record->save();
+                $user->load('records');
                 if ($record->record_type->is_end_work_shift) { // cierre de turno
-                    if (!auth()->user()->saleVsCounterIsOk()) {
-                        $allowed_range = config('constants.liters.allowed_range');
-                        throw new Exception("Verifica el valor del contador de litros, ya que la sumatoria de litros en ventas tiene un desfase mayor a {$allowed_range}L con el contador.");
+                    $allowed_range = config('constants.liters.allowed_range');
+                    $counter = $user->getCurrentLitersCounter();
+                    $max_counter = $counter + $allowed_range;
+                    $min_counter = $counter - $allowed_range;
+                    if (abs($record->value - $counter) > $allowed_range) {
+                        logger("El empleado quiere cerrar turno con: $record->value, pero no entra en el rango de [$min_counter y $max_counter].");
+                        throw new Exception("El valor debería estar entre [$min_counter y $max_counter], verifica las ventas registradas.");
                     }
                 }
                 return [

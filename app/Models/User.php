@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,7 +14,6 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use PhpParser\Node\Expr\Cast\Double;
 
 class User extends Authenticatable
 {
@@ -140,79 +138,6 @@ class User extends Authenticatable
     }
 
     /**
-     * hace el calculo entre lo que se esta registrando con lo que se esta vendiendo y da un margen de venta de
-     * 
-     */
-    public function saleVsCounterIsOk(): bool
-    {
-        $allowed_range = config('constants.liters.allowed_range');
-        logger('$allowed_range>>>>' . $allowed_range);
-        logger('this->getLitersPerWorkShiftSale()>>>>' . $this->getLitersPerWorkShiftSale());
-        logger('this->getCounterLiters()>>>>' . $this->getCounterLiters());
-        logger('abs($this->getLitersPerWorkShiftSale() - $this->getCounterLiters()) < $allowed_range ? true : false>>>>' . (abs($this->getLitersPerWorkShiftSale() - $this->getCounterLiters()) < $allowed_range ? true : false));
-        return abs($this->getLitersPerWorkShiftSale() - $this->getCounterLiters()) < $allowed_range ? true : false;
-    }
-
-    /**
-     * obtenemos los litros que vendio segun su relacion de garrafones por la cantidad vendida
-     */
-    protected function getLitersPerWorkShiftSale()
-    {
-        return $this->sales()
-            ->whereDate('sales.created_at', today())
-            ->join('products', 'sales.product_id', '=', 'products.id')
-            ->select(DB::raw('SUM(products.liters * sales.amount) as total'))
-            ->value('total');
-    }
-
-    /**
-     * obtenemos el valor del contador de litros de inicio de dia
-     */
-    protected function getInitLitersToday()
-    {
-        $init_liters = $this->records()
-            ->whereDate('created_at', today())
-            ->whereHas(
-                'record_type',
-                fn($q) =>
-                $q->where('name', RecordType::TYPES[0]) //inicio de dia, 
-            )
-            ->first();
-        return $init_liters->value;
-    }
-
-    /**
-     * retorna la diferencia de litros entre el fin de turno y el inicio de turno del usuario
-     */
-    protected function getCounterLiters()
-    {
-        $init_liters = $this->getInitLitersToday();
-        $end_score = $this->records()
-            ->whereDate('created_at', today())
-            ->whereHas(
-                'record_type',
-                fn($q) =>
-                $q->where('name', RecordType::TYPES[3]) //fin de turno
-            )
-            ->first();
-
-        if (!$end_score) {
-            return null; // no hay datos suficientes
-        }
-
-        $end_value  = $end_score->value;
-        $max_counter = 9999;
-        // Lógica de diferencia con reinicio
-        if ($end_value >= $init_liters) {
-            logger('getCounterLiters: $end_value - $init_liters: >>>>' . ($end_value - $init_liters));
-            return $end_value - $init_liters;
-        } else {
-            logger('getCounterLiters: $max_counter - $init_liters) + $end_value: >>>>' . (($max_counter - $init_liters) + $end_value));
-            return ($max_counter - $init_liters) + $end_value;
-        }
-    }
-
-    /**
      * obtiene el valor del ultimo registro de inicio de turno
      */
     protected function getLastShiftStartValue(): float
@@ -227,7 +152,7 @@ class User extends Authenticatable
     }
 
     /**
-     * obtiene las ventas del empleado, las une con el proudcto para obtener los litros
+     * obtiene las ventas del empleado, las une con el producto para obtener los litros
      * los suma y regresa el total
      */
     public function getCurrentLitersCounter(): float
