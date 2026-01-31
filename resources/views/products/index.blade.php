@@ -21,6 +21,7 @@
                         <th>Nombre</th>
                         <th>Precio</th>
                         <th>Litros</th>
+                        <th>Existencias</th>
                         <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
@@ -84,6 +85,13 @@
                     {
                         data: 'liters',
                         name: 'liters'
+                    },
+                    {
+                        data: 'stock',
+                        name: 'stock',
+                        render: function(data, type, row) {
+                            return data != null ? data : '∞';
+                        }
                     },
                     {
                         data: 'is_active',

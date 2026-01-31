@@ -9,7 +9,8 @@
 @section('content')
     <div class="card">
         <div class="card-body">
-            <form action="{{ isset($product) ? route('products.update', $product->id) : route('products.store') }}" method="POST">
+            <form action="{{ isset($product) ? route('products.update', $product->id) : route('products.store') }}"
+                method="POST">
                 @csrf
                 @if (isset($product))
                     @method('PUT')
@@ -21,8 +22,7 @@
                 <div class="form-group">
                     <label for="name">Nombre del producto</label>
                     <input type="text" name="name" id="name" class="form-control"
-                        value="{{ old('name', $product->name ?? '') }}"
-                        placeholder="Ej: Botella 2L" required>
+                        value="{{ old('name', $product->name ?? '') }}" placeholder="Ej: Botella 2L" required>
                     @error('name')
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
@@ -33,9 +33,8 @@
                 {{-- ===================== --}}
                 <div class="form-group">
                     <label for="price">Precio</label>
-                    <input type="number" name="price" id="price" class="form-control"
-                        step="0.01" min="0" placeholder="Ej: 10.00"
-                        value="{{ old('price', $product->price ?? '') }}" required>
+                    <input type="number" name="price" id="price" class="form-control" step="0.01" min="0"
+                        placeholder="Ej: 10.00" value="{{ old('price', $product->price ?? '') }}" required>
                     @error('price')
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
@@ -46,10 +45,18 @@
                 {{-- ===================== --}}
                 <div class="form-group">
                     <label for="liters">Litros (opcional)</label>
-                    <input type="number" name="liters" id="liters" class="form-control"
-                        step="0.5" min="0" placeholder="Ej: 2"
-                        value="{{ old('liters', $product->liters ?? '') }}">
+                    <input type="number" name="liters" id="liters" class="form-control" step="0.1" min="0"
+                        placeholder="Ej: 2" value="{{ old('liters', $product->liters ?? '') }}">
                     @error('liters')
+                        <span class="text-danger">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="form-group">
+                    <label for="stock">Cantidad de productos</label>
+                    <input type="number" name="stock" id="stock" class="form-control" step="1" min="0"
+                        placeholder="Ej: 2" value="{{ old('stock', $product->stock ?? '') }}">
+                    @error('stock')
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
                 </div>

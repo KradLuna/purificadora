@@ -29,11 +29,15 @@ class RecordRequest extends FormRequest
             'record_type_id' => [$flexRule, Rule::exists('record_types', 'id')],
             'value' => [
                 'nullable',
-                'regex:/^\d+(\.\d{1,2})?$/',
-                Rule::requiredIf(function () {
-                    return $this->getMethod() == 'POST'
-                        && (int) $this->record_type_id !== 3; // id purga
-                })
+                'numeric',
+                'min:0',
+                'max:9999',
+                'regex:/^\d+(\.\d{1,2})?$/', // máximo 2 decimales
+                Rule::requiredIf(
+                    fn() =>
+                    $this->getMethod() === 'POST'
+                        && (int) $this->record_type_id !== 3
+                ),
             ],
             'evidence' => [
                 'nullable',
@@ -46,6 +50,16 @@ class RecordRequest extends FormRequest
                 })
             ],
             'record_date' => ['sometimes', 'date_format:Y-m-d\TH:i']
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'value.numeric'  => 'El valor debe ser un número.',
+            'value.min'      => 'El valor no puede ser negativo.',
+            'value.max'      => 'El valor máximo permitido es 9999',
+            'value.regex'    => 'El valor solo puede tener hasta 2 decimales.',
         ];
     }
 }

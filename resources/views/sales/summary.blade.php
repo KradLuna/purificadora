@@ -144,6 +144,19 @@
             </div>
         </div>
 
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">Ventas semanales (Garrafones)</div>
+                <div class="card-body" style="overflow-x: auto;">
+                    <canvas id="ventasSemanalesProductosChart"
+                        style="height: 350px; min-width: 120%; max-width: 120%;"></canvas>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+    <div class="row">
         <!-- Gráfica 2: Ventas por Producto -->
         <div class="col-md-6">
             <div class="card">
@@ -154,9 +167,30 @@
             </div>
         </div>
 
-
+        <!-- Gráfica 4: Dona Ventas históricas por producto -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    Ventas históricas por producto
+                </div>
+                <div class="card-body">
+                    <canvas id="ventasProductoGlobalChart" style="min-width: 90%; max-width: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
+    <!-- Gráfica 5: barras Ventas históricas por dia de la semana -->
     <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    Ventas históricas por día de la semana
+                </div>
+                <div class="card-body">
+                    <canvas id="ventasPorDiaSemanaChart" style="height: 350px;"></canvas>
+                </div>
+            </div>
+        </div>
         <!-- Gráfica 3: Ventas históricas por hora -->
         <div class="col-md-6">
             <div class="card">
@@ -167,6 +201,7 @@
             </div>
         </div>
     </div>
+
 @stop
 
 @section('js')
@@ -324,5 +359,215 @@
                 }
             }
         });
+        // === Gráfica 4: Ventas globales por producto ===
+        const ctxGlobal = document
+            .getElementById('ventasProductoGlobalChart')
+            .getContext('2d');
+
+        new Chart(ctxGlobal, {
+            type: 'doughnut',
+            data: {
+                labels: @json($ventasProductosGlobal->pluck('producto')),
+                datasets: [{
+                    data: @json($ventasProductosGlobal->pluck('total_vendido')),
+                    backgroundColor: @json($colores),
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            plugins: [ChartDataLabels],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const cantidad = @json($ventasProductosGlobal->pluck('cantidad_vendida'))[context.dataIndex];
+                                const total = context.parsed;
+                                return `${context.label}: $${total.toLocaleString()} (${cantidad})`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        color: '#000',
+                        formatter: function(value, context) {
+                            const cantidad = @json($ventasProductosGlobal->pluck('cantidad_vendida'))[context.dataIndex];
+                            return `$${value.toLocaleString()} (${cantidad})`;
+                        },
+                        font: {
+                            weight: 'bold',
+                            size: 12
+                        },
+                        textShadowBlur: 10,
+                        textShadowColor: 'rgba(255,255,255,1)'
+                    }
+                }
+            }
+        });
+
+        //ventas históricas por dia de la semana
+        const ctxDiaSemana = document
+            .getElementById('ventasPorDiaSemanaChart')
+            .getContext('2d');
+
+        new Chart(ctxDiaSemana, {
+            type: 'bar',
+            data: {
+                labels: @json($labelsDias),
+                datasets: [{
+                    label: 'Ventas por día ($)',
+                    data: @json($dataDias),
+                    backgroundColor: @json($colores),
+                    borderWidth: 1
+                }]
+            },
+            plugins: [ChartDataLabels],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Monto ($)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `$${ctx.parsed.y.toLocaleString()}`
+                        }
+                    },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        color: '#000',
+                        formatter: value => `$${value.toLocaleString()}`,
+                        font: {
+                            weight: 'bold',
+                            size: 12
+                        },
+                        textShadowBlur: 10,
+                        textShadowColor: 'rgba(255,255,255,0.8)'
+                    }
+                }
+            }
+        });
+        // ventas garrafones
+        const ctxSemProd = document.getElementById('ventasSemanalesProductosChart').getContext('2d');
+
+        new Chart(ctxSemProd, {
+            type: 'bar',
+            data: {
+                labels: @json($labelsSemanasProd),
+                datasets: [{
+                    label: 'Ventas ($)',
+                    data: @json($totalesSemanasProd),
+                    backgroundColor: @json($colores),
+                    borderWidth: 1
+                }]
+            },
+            plugins: [ChartDataLabels], // <-- habilitamos el plugin
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // <-- importante queremos scroll
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Monto ($)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    datalabels: {
+                        color: '#000',
+                        anchor: 'end',
+                        align: function(context) {
+                            const value = context.dataset.data[context.dataIndex];
+                            return value < 1000 ? 'right' : 'left';
+                        },
+                        formatter: value => `$${value.toLocaleString()}`,
+                        font: {
+                            weight: 'bold',
+                            size: 12
+                        },
+                        textShadowBlur: 10,
+                        textShadowColor: 'rgba(255, 255, 255, 0.3)',
+                    },
+                    tooltip: {
+                        enabled: false // el tooltip sigue funcionando si lo quieres
+                    }
+                }
+            }
+        });
+
+
+        // const ctxSemProd = document
+        //     .getElementById('ventasSemanalesProductosChart')
+        //     .getContext('2d');
+
+        // new Chart(ctxSemProd, {
+        //     type: 'bar',
+        //     data: {
+        //         labels: @json($labelsSemanasProd),
+        //         datasets: [{
+        //             label: 'Ventas semanales ($)',
+        //             data: @json($totalesSemanasProd),
+        //             backgroundColor: @json($colores),
+        //             borderWidth: 1
+        //         }]
+        //     },
+        //     plugins: [ChartDataLabels],
+        //     options: {
+        //         responsive: true,
+        //         maintainAspectRatio: false,
+        //         scales: {
+        //             y: {
+        //                 beginAtZero: true,
+        //                 title: {
+        //                     display: true,
+        //                     text: 'Monto ($)'
+        //                 }
+        //             }
+        //         },
+        //         plugins: {
+        //             legend: {
+        //                 display: false
+        //             },
+        //             tooltip: {
+        //                 callbacks: {
+        //                     label: ctx => `$${ctx.parsed.y.toLocaleString()}`
+        //                 }
+        //             },
+        //             datalabels: {
+        //                 anchor: 'end',
+        //                 align: 'top',
+        //                 color: '#000',
+        //                 formatter: value => `$${value.toLocaleString()}`,
+        //                 font: {
+        //                     weight: 'bold',
+        //                     size: 11
+        //                 },
+        //                 textShadowBlur: 10,
+        //                 textShadowColor: 'rgba(255,255,255,0.8)'
+        //             }
+        //         }
+        //     }
+        // });
     </script>
 @stop

@@ -37,7 +37,7 @@ class HistoricSaleController extends Controller
             })
             ->editColumn('created_at', function ($sale) {
                 // formateo a dd/mm/yyyy
-                return $sale->created_at ? $sale->created_at->format('d/m/Y') : '—';
+                return $sale->created_at ? $sale->created_at->locale('es')->isoFormat('dddd hh:mm A | D MMMM YYYY') : '—';
             })
             ->addColumn('action', function ($row) {
                 return view('historic-sales.actions', compact('row'))->render();

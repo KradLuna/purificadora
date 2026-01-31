@@ -163,17 +163,38 @@ class SaleController extends Controller
         $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
         $endOfWeek   = Carbon::now()->endOfWeek(Carbon::SUNDAY);
 
-        // Ventas semana actual (lunes a domingo)
-        $ventasSemana = Sale::select(
-            DB::raw('DAYOFWEEK(created_at) as dia_num'),
-            DB::raw('DAYNAME(created_at) as dia'),
-            DB::raw('SUM(total) as total')
-        )
-            ->whereBetween('created_at', [$startOfWeek, $endOfWeek])
-            ->groupBy(DB::raw('DAYOFWEEK(created_at)'), DB::raw('DAYNAME(created_at)'))
-            ->get()
-            ->keyBy('dia');
-        // PENDIENTE CREAR LA TABLA PARA LAS HORAS
+        // Ventas semana historicas (lunes a domingo)
+        $ventasPorDiaSemana = Sale::query()
+            ->selectRaw('
+                DAYOFWEEK(created_at) AS dia_numero,
+                DAYNAME(created_at)   AS dia_nombre,
+                SUM(total)            AS total_dia
+                ')
+            ->whereNull('deleted_at')
+            ->groupByRaw('DAYOFWEEK(created_at), DAYNAME(created_at)')
+            ->orderBy('dia_numero')
+            ->get();
+
+        $diasSemana = [
+            2 => 'Lunes',
+            3 => 'Martes',
+            4 => 'Miércoles',
+            5 => 'Jueves',
+            6 => 'Viernes',
+            7 => 'Sabado',
+            1 => 'Domingo',
+        ];
+
+        $labelsDias = [];
+        $dataDias   = [];
+
+        foreach ($diasSemana as $num => $nombre) {
+            $row = $ventasPorDiaSemana->firstWhere('dia_numero', $num);
+
+            $labelsDias[] = __($nombre); // opcional traducción
+            $dataDias[]   = $row ? (float) $row->total_dia : 0;
+        }
+
         $sub = DB::table('records as e')
             ->select([
                 'e.user_id',
@@ -302,6 +323,41 @@ class SaleController extends Controller
         // total
         $totalVentasSemana = Sale::whereBetween('created_at', [$startOfWeek, $endOfWeek])->sum('total');
 
+        //ventas historicas por producto
+        $globalSalesPerProduct = Sale::query()
+            ->select([
+                'products.id as product_id',
+                'products.name as producto',
+                DB::raw('SUM(sales.amount) as cantidad_vendida'),
+                DB::raw('SUM(sales.total) as total_vendido'),
+            ])
+            ->join('products', 'products.id', '=', 'sales.product_id')
+            ->whereNull('sales.deleted_at')
+            ->whereNotIn('products.id', [10, 11])
+            ->groupBy('products.id', 'products.name')
+            ->orderByDesc('total_vendido')
+            ->get();
+
+        $ventasSemanalesGarrafones = Sale::query()
+            ->selectRaw('
+                YEAR(sales.created_at)    AS anio,
+                WEEK(sales.created_at, 1) AS semana,
+                SUM(sales.total)          AS total_vendido
+            ')
+            ->join('products', 'products.id', '=', 'sales.product_id')
+            ->whereNull('sales.deleted_at')
+            ->whereIn('products.id', [6, 7, 12, 13, 15]) //son los ids de todos los garrafones
+            ->groupByRaw('YEAR(sales.created_at), WEEK(sales.created_at, 1)')
+            ->orderBy('anio')
+            ->orderBy('semana')
+            ->get();
+        $labelsSemanas = [];
+        $totalesSemana = [];
+
+        foreach ($ventasSemanalesGarrafones as $row) {
+            $labelsSemanas[]     = "S{$row->semana} ({$row->anio})";
+            $totalesSemana[]    = (float) $row->total_vendido;
+        }
         return view('sales.summary', [
             'labels' => $labels,
             'data' => $data,
@@ -313,7 +369,13 @@ class SaleController extends Controller
             'ventasSemanaPorEmpleado' => $ventasSemanaPorEmpleado,
             'totalVentasSemana' => $totalVentasSemana,
             'totalPagoHoras' => $weeklyPayments,
-            'ventasPorHora' => $salesPerHour
+            'ventasPorHora' => $salesPerHour,
+            'ventasProductosGlobal' => $globalSalesPerProduct,
+            'labelsDias' => $labelsDias,
+            'dataDias' => $dataDias,
+            'ventasSemanalesGarrafones' => $ventasSemanalesGarrafones,
+            'labelsSemanasProd'     => $labelsSemanas,
+            'totalesSemanasProd'   => $totalesSemana,
         ]);
     }
 }

@@ -43,6 +43,7 @@ class Sale extends Model
      */
     protected $casts = [
         'total' => 'decimal:2',
+        'created_at' => 'datetime',
     ];
 
 
@@ -61,6 +62,7 @@ class Sale extends Model
             'amount' => $data['amount'],
             'total' => Product::find($data['product_id'])->price * $data['amount'],
         ]);
+        $sale->product->reduceStock();
         return [
             'success' => true,
             'sale' => $sale
@@ -99,6 +101,17 @@ class Sale extends Model
             'sale' => $sale
         ];
     }
+
+    /**
+     * formateo de fecha
+     */
+    public function getCreatedAtFormattedAttribute()
+    {
+        return $this->created_at
+            ? $this->created_at->format('Y-m-d H:i')
+            : null;
+    }
+
     /**
      * RELATIONSHIPS
      */

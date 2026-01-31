@@ -16,7 +16,7 @@ class ProductController extends Controller
      */
     public function data()
     {
-        $products = Product::select(['id', 'name', 'price', 'liters', 'is_active']);
+        $products = Product::select(['id', 'name', 'price', 'liters', 'stock', 'is_active']);
         return DataTables::of($products)
             ->addColumn('action', function ($row) {
                 return view('products.actions', compact('row'))->render();
@@ -88,7 +88,7 @@ class ProductController extends Controller
      */
     public function update(ProductRequest $request, Product $product)
     {
-        $product->update($request->validated());
+        $product->updateModel($request->validated());
 
         return redirect()->route('products.index')
             ->with('success', 'Producto actualizado correctamente');

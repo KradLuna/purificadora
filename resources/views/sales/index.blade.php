@@ -33,6 +33,10 @@
                             ${{ number_format($product->price, 2) }}
                         </p>
                         <small class="text-muted">Presiona para vender</small>
+                        @if (isset($product->stock))
+                            <br>
+                            <small class="text-muted">Existencias ({{ $product->stock }})</small>
+                        @endif
                     </div>
                 </div>
             </div>

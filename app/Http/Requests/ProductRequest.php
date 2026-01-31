@@ -30,6 +30,7 @@ class ProductRequest extends FormRequest
             'price' => [$flexRule, 'regex:/^\d+(\.\d{1,2})?$/'],
             'is_active' => [$flexRule, 'boolean'],
             'liters' => [$flexRule, 'regex:/^\d+(\.\d{1,2})?$/'],
+            'stock' => [$flexRule, 'numeric', 'min:0', 'max:100']
         ];
     }
 }
