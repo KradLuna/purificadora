@@ -11,34 +11,96 @@ use Carbon\Carbon;
 class RecordController extends Controller
 {
 
+    // public function data()
+    // {
+    //     $user = auth()->user();
+    //     $query = Record::with(['user', 'record_type']);
+    //     // Si es empleado, solo ve sus registros y del día
+    //     if ($user->hasRole(User::ROLES[1])) {
+    //         $query->where('user_id', $user->id)
+    //             ->whereDate('created_at', today())
+    //             ->latest();
+    //     }
+    //     return datatables()->eloquent($query)
+    //         ->addColumn('id', function ($row) {
+    //             return $row->id;
+    //         })
+    //         ->addColumn('user.full_name', function ($row) use ($user) {
+    //             // Solo enviar el nombre si es admin
+    //             return $user->hasRole(User::ROLES[0]) ? $row->user->full_name : '';
+    //         })->addColumn('actions', function ($row) {
+    //             // Renderiza el partial blade y pasa la fila actual 
+    //             return view('records.actions', compact('row'))->render();
+    //         })->editColumn('created_at', function ($record) {
+    //             return $record->created_at ? $record->created_at->locale('es')->isoFormat('dddd hh:mm A | D MMMM YYYY') : '';
+    //         })->addColumn('evidence', function ($row) {
+    //             return view('records.evidence', compact('row'))->render();
+    //         })->editColumn('value', function ($row) {
+    //             return $row->value ?? 'N/A';
+    //         })->rawColumns(['actions', 'evidence'])->make(true);
+    // }
     public function data()
     {
         $user = auth()->user();
-        $query = Record::with(['user', 'record_type']);
-        // Si es empleado, solo ve sus registros y del día
+
+        $query = Record::query()->with(['user', 'record_type']);
+
+        // Empleado: solo sus registros del día
         if ($user->hasRole(User::ROLES[1])) {
             $query->where('user_id', $user->id)
-                ->whereDate('created_at', today())
-                ->latest();
+                ->whereDate('created_at', today());
         }
+
         return datatables()->eloquent($query)
-            ->addColumn('id', function ($row) {
-                return $row->id;
+
+            // EMPLEADO (virtual)
+            ->addColumn('employee_name', function ($row) use ($user) {
+                return $user->hasRole(User::ROLES[0])
+                    ? optional($row->user)->full_name
+                    : '';
             })
-            ->addColumn('user.full_name', function ($row) use ($user) {
-                // Solo enviar el nombre si es admin
-                return $user->hasRole(User::ROLES[0]) ? $row->user->full_name : '';
-            })->addColumn('actions', function ($row) {
-                // Renderiza el partial blade y pasa la fila actual 
-                return view('records.actions', compact('row'))->render();
-            })->editColumn('created_at', function ($record) {
-                return $record->created_at ? $record->created_at->locale('es')->isoFormat('dddd hh:mm A | D MMMM YYYY') : '';
-            })->addColumn('evidence', function ($row) {
-                return view('records.evidence', compact('row'))->render();
-            })->editColumn('value', function ($row) {
+            ->filterColumn('employee_name', function ($query, $keyword) {
+                $query->whereHas('user', function ($q) use ($keyword) {
+                    $q->where('full_name', 'LIKE', "%{$keyword}%");
+                });
+            })
+
+            // TIPO DE REGISTRO (virtual)
+            ->addColumn('record_type_name', function ($row) {
+                return optional($row->record_type)->name;
+            })
+            ->filterColumn('record_type_name', function ($query, $keyword) {
+                $query->whereHas('record_type', function ($q) use ($keyword) {
+                    $q->where('name', 'LIKE', "%{$keyword}%");
+                });
+            })
+
+            // VALOR
+            ->editColumn('value', function ($row) {
                 return $row->value ?? 'N/A';
-            })->rawColumns(['actions', 'evidence'])->make(true);
+            })
+
+            // FECHA
+            ->editColumn('created_at', function ($record) {
+                return $record->created_at
+                    ? $record->created_at->locale('es')->isoFormat('dddd hh:mm A | D MMMM YYYY')
+                    : '';
+            })
+
+            // EVIDENCIA
+            ->addColumn('evidence', function ($row) {
+                return view('records.evidence', compact('row'))->render();
+            })
+
+            // ACCIONES
+            ->addColumn('actions', function ($row) {
+                return view('records.actions', compact('row'))->render();
+            })
+
+            ->rawColumns(['actions', 'evidence'])
+            ->make(true);
     }
+
 
     /**
      * Display a listing of the resource.

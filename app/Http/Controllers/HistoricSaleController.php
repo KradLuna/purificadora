@@ -24,26 +24,49 @@ class HistoricSaleController extends Controller
 
     public function data()
     {
-        $query = Sale::with(['user', 'product'])
+        $query = Sale::query()
+            ->with(['user', 'product'])
             ->select('sales.*')
             ->orderBy('sales.created_at', 'desc');
 
         return DataTables::of($query)
+
+            // EMPLEADO
             ->addColumn('employee_name', function ($sale) {
                 return $sale->user ? $sale->user->full_name : '—';
             })
+            ->filterColumn('employee_name', function ($query, $keyword) {
+                $query->whereHas('user', function ($q) use ($keyword) {
+                    $q->where('full_name', 'LIKE', "%{$keyword}%");
+                });
+            })
+
+            // PRODUCTO
             ->addColumn('product_name', function ($sale) {
                 return $sale->product ? $sale->product->name : '—';
             })
-            ->editColumn('created_at', function ($sale) {
-                // formateo a dd/mm/yyyy
-                return $sale->created_at ? $sale->created_at->locale('es')->isoFormat('dddd hh:mm A | D MMMM YYYY') : '—';
+            ->filterColumn('product_name', function ($query, $keyword) {
+                $query->whereHas('product', function ($q) use ($keyword) {
+                    $q->where('name', 'LIKE', "%{$keyword}%");
+                });
             })
+
+            // FECHA
+            ->editColumn('created_at', function ($sale) {
+                return $sale->created_at
+                    ? $sale->created_at->locale('es')->isoFormat('dddd hh:mm A | D MMMM YYYY')
+                    : '—';
+            })
+
+            // ACCIONES
             ->addColumn('action', function ($row) {
                 return view('historic-sales.actions', compact('row'))->render();
             })
+
+            ->rawColumns(['action'])
             ->make(true);
     }
+
 
     /**
      * Show the form for creating a new resource.

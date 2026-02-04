@@ -103,29 +103,23 @@
             });
 
             $(function() {
-                let columns = [
-                    //         {data: 'id',
-                    //         name: 'id',
-                    //         visible: false
-                    //     }, // ID real, oculto
-                ];
+                let columns = [];
 
                 @if ($isAdmin)
                     columns.push({
-                        data: 'user.full_name',
-                        name: 'user.full_name'
+                        data: 'employee_name',
+                        name: 'employee_name'
                     });
                 @endif
 
                 columns.push({
-                    data: 'record_type.name',
-                    name: 'record_type.name'
+                    data: 'record_type_name',
+                    name: 'record_type_name'
                 }, {
                     data: 'value',
                     name: 'value'
                 }, {
                     data: 'evidence',
-                    name: 'evidence',
                     orderable: false,
                     searchable: false
                 }, {
@@ -133,7 +127,6 @@
                     name: 'created_at'
                 }, {
                     data: 'actions',
-                    name: 'actions',
                     orderable: false,
                     searchable: false
                 });
