@@ -20,71 +20,43 @@
                         <table class="table table-bordered table-striped mb-0">
                             <thead class="table-primary text-center">
                                 <tr>
-                                    <th>Empleado</th>
-                                    <th>Lunes</th>
-                                    <th>Martes</th>
-                                    <th>Miércoles</th>
-                                    <th>Jueves</th>
-                                    <th>Viernes</th>
-                                    <th>Sábado</th>
-                                    <th>Domingo</th>
+                                    <th>Día</th>
+                                    @foreach ($empleados as $empleadoId => $empleadoNombre)
+                                        <th>{{ $empleadoNombre }}</th>
+                                    @endforeach
+                                    <th>Total del Día</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($ventasPorEmpleadoProcesadas as $empleado)
+                                @foreach ($diasSemanaOrden as $diaIngles => $diaEspanol)
                                     <tr>
-                                        <td>{{ $empleado['empleado'] }}</td>
-                                        @foreach ($empleado['ventas'] as $venta)
-                                            <td class="text-center">${{ number_format($venta, 2) }}</td>
+                                        <td class="fw-bold">{{ $diaEspanol }}</td>
+                                        @foreach ($empleados as $empleadoId => $empleadoNombre)
+                                            <td class="text-center">
+                                                ${{ number_format($ventasPorDia[$diaIngles]['ventas'][$empleadoId] ?? 0, 2) }}
+                                            </td>
                                         @endforeach
+                                        <td class="text-center fw-bold table-primary">
+                                            ${{ number_format($totalesPorDiaReordenados[$diaIngles] ?? 0, 2) }}
+                                        </td>
                                     </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="2" class="text-center text-muted">Sin ventas en la semana</td>
-                                    </tr>
-                                @endforelse
+                                @endforeach
                             </tbody>
+                            <tfoot class="table-info fw-bold">
+                                <tr>
+                                    <td class="text-end">TOTAL POR EMPLEADO:</td>
+                                    @foreach ($empleados as $empleadoId => $empleadoNombre)
+                                        <td class="text-center">
+                                            ${{ number_format($totalesPorEmpleado[$empleadoId] ?? 0, 2) }}
+                                        </td>
+                                    @endforeach
+                                    <td class="text-center">
+                                        ${{ number_format(array_sum($totalesPorDiaReordenados), 2) }}
+                                    </td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">Ventas por empleado - Semana actual</h5>
-                </div>
-                <div class="card-body p-0">
-                    <table class="table table-striped table-sm mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Empleado</th>
-                                <th class="text-end">Total de la semana</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($ventasSemanaPorEmpleado as $venta)
-                                <tr>
-                                    <td>{{ $venta->user->full_name ?? 'Desconocido' }}</td>
-                                    <td class="text-end">${{ number_format($venta->total_semana, 2) }}</td>
-                                </tr>
-
-                            @empty
-                                <tr>
-                                    <td colspan="2" class="text-center text-muted">Sin ventas en la semana</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                        <tfoot>
-                            <tr class="table-primary fw-bold">
-                                <td>Total: </td>
-                                <td class="text-end">${{ number_format($totalVentasSemana, 2) }}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
                 </div>
             </div>
         </div>
@@ -116,7 +88,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="2" class="text-center text-muted">Sin ventas en la semana</td>
+                                    <td colspan="2" class="text-center text-muted">Sin pagos en la semana</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -128,6 +100,67 @@
                             </tr>
                         </tfoot>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Pagos por empleado - Últimas {{ count($ultimasSemanas) }} semanas</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped mb-0">
+                            <thead class="table-info text-center">
+                                <tr>
+                                    <th>Empleado</th>
+                                    @foreach ($ultimasSemanas as $semana)
+                                        <th>{{ $semana['label'] }}</th>
+                                    @endforeach
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($pagosPorEmpleadoSemana as $empleado)
+                                    @php $totalEmpleado = 0; @endphp
+                                    <tr>
+                                        <td>{{ $empleado['nombre'] }}</td>
+                                        @foreach ($ultimasSemanas as $semana)
+                                            @php
+                                                $key = $semana['anio'] . '-' . $semana['semana'];
+                                                $monto = $empleado['pagos_por_semana'][$key] ?? 0;
+                                                $totalEmpleado += $monto;
+                                            @endphp
+                                            <td class="text-end">${{ number_format($monto, 2) }}</td>
+                                        @endforeach
+                                        <td class="text-end fw-bold">${{ number_format($totalEmpleado, 2) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="{{ count($ultimasSemanas) + 2 }}" class="text-center text-muted">
+                                            No hay datos de pagos en las últimas semanas
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                            <tfoot class="table-info fw-bold">
+                                <tr>
+                                    <td class="text-end">TOTAL POR SEMANA:</td>
+                                    @foreach ($ultimasSemanas as $semana)
+                                        @php
+                                            $key = $semana['anio'] . '-' . $semana['semana'];
+                                            $totalSemana = $totalesSemanalesPagos[$key] ?? 0;
+                                        @endphp
+                                        <td class="text-end">${{ number_format($totalSemana, 2) }}</td>
+                                    @endforeach
+                                    <td class="text-end">${{ number_format(array_sum($totalesSemanalesPagos), 2) }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -161,8 +194,10 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header bg-success text-white">Ventas por Producto (Semana Actual)</div>
-                <div class="card-body" style="overflow-x: auto;">
-                    <canvas id="productosChart" style="min-width: 90%; max-width: 100%;"></canvas>
+                <div class="card-body" style="height: 450px; overflow-y: auto; overflow-x: auto;">
+                    <div style="min-height: 400px; min-width: 100%;">
+                        <canvas id="productosChart" style="display: block; width: 100%; height: 100%;"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -173,8 +208,10 @@
                 <div class="card-header bg-warning text-white">
                     Ventas históricas por producto
                 </div>
-                <div class="card-body">
-                    <canvas id="ventasProductoGlobalChart" style="min-width: 90%; max-width: 100%;"></canvas>
+                <div class="card-body" style="height: 450px; overflow-y: auto; overflow-x: auto;">
+                    <div style="min-height: 400px; min-width: 100%;">
+                        <canvas id="ventasProductoGlobalChart" style="display: block; width: 100%; height: 100%;"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -182,12 +219,12 @@
     <!-- Gráfica 5: barras Ventas históricas por dia de la semana -->
     <div class="row">
         <div class="col-md-6">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-header bg-secondary text-white">
                     Ventas históricas por día de la semana
                 </div>
-                <div class="card-body">
-                    <canvas id="ventasPorDiaSemanaChart" style="height: 350px;"></canvas>
+                <div class="card-body" style="height: 450px; overflow-y: auto;">
+                    <canvas id="ventasPorDiaSemanaChart" style="height: 400px; width: 100%;"></canvas>
                 </div>
             </div>
         </div>
@@ -282,7 +319,9 @@
             plugins: [ChartDataLabels], // <-- habilitamos el plugin
             options: {
                 responsive: true,
-                maintainAspectRatio: false, // <-- importante queremos scroll
+                //maintainAspectRatio: false, // <-- importante queremos scroll
+                maintainAspectRatio: true, // Cambiado a true para mantener proporción
+                aspectRatio: .9, // Controla el ancho/alto (más alto = más ancho)
                 plugins: {
                     legend: {
                         position: 'bottom'
@@ -378,7 +417,9 @@
             plugins: [ChartDataLabels],
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                // maintainAspectRatio: false,
+                maintainAspectRatio: true, // Cambiado a true para mantener proporción
+                aspectRatio: 0.9, // Controla el ancho/alto (más alto = más ancho)
                 plugins: {
                     legend: {
                         position: 'bottom'
@@ -515,59 +556,5 @@
                 }
             }
         });
-
-
-        // const ctxSemProd = document
-        //     .getElementById('ventasSemanalesProductosChart')
-        //     .getContext('2d');
-
-        // new Chart(ctxSemProd, {
-        //     type: 'bar',
-        //     data: {
-        //         labels: @json($labelsSemanasProd),
-        //         datasets: [{
-        //             label: 'Ventas semanales ($)',
-        //             data: @json($totalesSemanasProd),
-        //             backgroundColor: @json($colores),
-        //             borderWidth: 1
-        //         }]
-        //     },
-        //     plugins: [ChartDataLabels],
-        //     options: {
-        //         responsive: true,
-        //         maintainAspectRatio: false,
-        //         scales: {
-        //             y: {
-        //                 beginAtZero: true,
-        //                 title: {
-        //                     display: true,
-        //                     text: 'Monto ($)'
-        //                 }
-        //             }
-        //         },
-        //         plugins: {
-        //             legend: {
-        //                 display: false
-        //             },
-        //             tooltip: {
-        //                 callbacks: {
-        //                     label: ctx => `$${ctx.parsed.y.toLocaleString()}`
-        //                 }
-        //             },
-        //             datalabels: {
-        //                 anchor: 'end',
-        //                 align: 'top',
-        //                 color: '#000',
-        //                 formatter: value => `$${value.toLocaleString()}`,
-        //                 font: {
-        //                     weight: 'bold',
-        //                     size: 11
-        //                 },
-        //                 textShadowBlur: 10,
-        //                 textShadowColor: 'rgba(255,255,255,0.8)'
-        //             }
-        //         }
-        //     }
-        // });
     </script>
 @stop

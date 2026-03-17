@@ -153,6 +153,7 @@ class SaleController extends Controller
     public function summary()
     {
         $user = auth()->user();
+        $numberOfWeeksToPastToCount = 9;
 
         // Si no es admin, podrías mostrar otra vista o restringir
         if (!$user->isAdmin) {
@@ -163,6 +164,8 @@ class SaleController extends Controller
         $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
         $endOfWeek   = Carbon::now()->endOfWeek(Carbon::SUNDAY);
 
+        $currentEmployeesSalesWeek = Sale::currentEmployeesSalesWeek();
+
         // Ventas semana historicas (lunes a domingo)
         $ventasPorDiaSemana = Sale::query()
             ->selectRaw('
@@ -171,6 +174,7 @@ class SaleController extends Controller
                 SUM(total)            AS total_dia
                 ')
             ->whereNull('deleted_at')
+            ->where('created_at', '>=', now()->subWeeks($numberOfWeeksToPastToCount)->startOfWeek())
             ->groupByRaw('DAYOFWEEK(created_at), DAYNAME(created_at)')
             ->orderBy('dia_numero')
             ->get();
@@ -195,49 +199,10 @@ class SaleController extends Controller
             $dataDias[]   = $row ? (float) $row->total_dia : 0;
         }
 
-        $sub = DB::table('records as e')
-            ->select([
-                'e.user_id',
-                DB::raw('TIMESTAMPDIFF(SECOND, e.created_at, s.created_at) AS diff_seconds')
-            ])
-            ->leftJoin('records as s', function ($join) {
-                $join->on('s.user_id', '=', 'e.user_id')
-                    ->where('s.record_type_id', 4)
-                    ->whereRaw('s.created_at = (
-                SELECT MIN(s2.created_at)
-                FROM records s2
-                WHERE s2.user_id = e.user_id
-                  AND s2.record_type_id = 4
-                  AND s2.created_at > e.created_at
-            )');
-            })
-            ->where('e.record_type_id', 1)
-            ->whereRaw('YEARWEEK(e.created_at, 1) = YEARWEEK(CURDATE(), 1)')
-            ->whereNotNull('s.created_at');
+        $weeklyPayments = Sale::weeklyPayments();
 
-        $payment_per_hour = config('constants.payment.per_hour');
-
-        $weeklyPayments = DB::table(DB::raw("({$sub->toSql()}) as t"))
-            ->mergeBindings($sub)
-            ->join('users as U', 'U.id', '=', 't.user_id')
-            ->select([
-                'U.full_name',
-                DB::raw('SEC_TO_TIME(SUM(t.diff_seconds)) AS horas_trabajadas'),
-                DB::raw("ROUND(SUM(t.diff_seconds) / 3600 * $payment_per_hour, 2) AS monto_pagado"),
-            ])
-            ->groupBy('t.user_id', 'U.full_name')
-            ->get();
-
-        // Ventas Semanales (Ventas históricas semanales) // dd($weeklyPayments);
-        $weeklySales = DB::table('sales')
-            ->selectRaw('YEAR(created_at) AS anio')
-            ->selectRaw('WEEK(created_at, 1) AS semana')
-            ->selectRaw('SUM(total) AS total_semana')
-            ->whereNull('sales.deleted_at')
-            ->groupByRaw('YEAR(created_at), WEEK(created_at, 1)')
-            ->orderBy('anio')
-            ->orderBy('semana')
-            ->get();
+        // Ventas Semanales (Ventas históricas semanales)
+        $weeklySales = Sale::weeklySales();
 
         $labels = [];
         $data = [];
@@ -270,52 +235,12 @@ class SaleController extends Controller
             return sprintf('#%06X', mt_rand(0, 0xFFFFFF));
         });
 
-        $ventasSemanaPorEmpleado = Sale::select(
-            'employee_id',
-            DB::raw('DAYNAME(created_at) as dia'),
-            DB::raw('SUM(total) as total_dia')
-        )
-            ->whereBetween('created_at', [$startOfWeek, $endOfWeek])
-            ->whereNull('deleted_at')
-            ->groupBy('employee_id', DB::raw('DAYNAME(created_at)'), DB::raw('DAYOFWEEK(created_at)'))
-            ->orderBy(DB::raw('DAYOFWEEK(created_at)'))
-            ->get();
 
-        // Ventas por empleado del día actual
-        $ventasPorEmpleadoProcesadas = $ventasSemanaPorEmpleado->groupBy('employee_id')->map(function ($ventas) {
-            $empleado = $ventas->first()->user->full_name ?? 'Sin nombre';
-            $dias = [
-                'Monday' => 0,
-                'Tuesday' => 0,
-                'Wednesday' => 0,
-                'Thursday' => 0,
-                'Friday' => 0,
-                'Saturday' => 0,
-                'Sunday' => 0
-            ];
-
-            foreach ($ventas as $venta) {
-                $dias[$venta->dia] = $venta->total_dia;
-            }
-
-            return [
-                'empleado' => $empleado,
-                'ventas' => $dias
-            ];
-        });
-
-        // Ventas por empleado de la semana actual
-        $ventasSemanaPorEmpleado = Sale::select(
-            'employee_id',
-            DB::raw('SUM(total) as total_semana')
-        )
-            ->whereBetween('created_at', [$startOfWeek, $endOfWeek])
-            ->groupBy('employee_id')
-            ->with('user:id,full_name')
-            ->get();
-
+        /**
+         * ventas historicas por hora
+         */
         $salesPerHour = Sale::selectRaw('HOUR(created_at) AS hora, SUM(total) AS venta')
-            ->whereRaw('HOUR(created_at) BETWEEN 9 AND 20')
+            ->whereRaw('HOUR(created_at) BETWEEN 10 AND 20')
             ->groupByRaw('HOUR(created_at)')
             ->orderBy('hora')
             ->get();
@@ -338,26 +263,39 @@ class SaleController extends Controller
             ->orderByDesc('total_vendido')
             ->get();
 
-        $ventasSemanalesGarrafones = Sale::query()
-            ->selectRaw('
-                YEAR(sales.created_at)    AS anio,
-                WEEK(sales.created_at, 1) AS semana,
-                SUM(sales.total)          AS total_vendido
-            ')
-            ->join('products', 'products.id', '=', 'sales.product_id')
-            ->whereNull('sales.deleted_at')
-            ->whereIn('products.id', [6, 7, 12, 13, 15]) //son los ids de todos los garrafones
-            ->groupByRaw('YEAR(sales.created_at), WEEK(sales.created_at, 1)')
-            ->orderBy('anio')
-            ->orderBy('semana')
-            ->get();
+        /**
+         * preparando ventas semanales de garrafones
+         */
+
+        // Primero, genera un array con las últimas 9 semanas
+        $semanas = collect();
+        for ($i = 9; $i >= 0; $i--) {
+            $fecha = Carbon::now()->subWeeks($i);
+            $semanas->push([
+                'anio' => $fecha->year,
+                'semana' => $fecha->weekOfYear,
+                'label' => "S" . $fecha->weekOfYear . " (" . $fecha->year . ")"
+            ]);
+        }
+        $ventasSemanalesGarrafones = Sale::currentSalesWeek();
+
         $labelsSemanas = [];
         $totalesSemana = [];
 
-        foreach ($ventasSemanalesGarrafones as $row) {
-            $labelsSemanas[]     = "S{$row->semana} ({$row->anio})";
-            $totalesSemana[]    = (float) $row->total_vendido;
+        foreach ($semanas as $semana) {
+            $key = $semana['anio'] . '-' . $semana['semana'];
+            $labelsSemanas[] = $semana['label'];
+
+            // Si existe venta en esa semana, tomar el valor, sino 0
+            $totalesSemana[] = isset($ventasSemanalesGarrafones[$key])
+                ? (float) $ventasSemanalesGarrafones[$key]->total_vendido
+                : 0;
         }
+
+        /**
+         * calculo de pagos historicos de empleados omitiendo admins
+         */
+        $historicEmployeesPayments = Sale::historicEmployeesPayments();
         return view('sales.summary', [
             'labels' => $labels,
             'data' => $data,
@@ -365,8 +303,6 @@ class SaleController extends Controller
             'productos' => $productos,
             'totalesProductos' => $totalesProductos,
             'coloresProductos' => $coloresProductos,
-            'ventasPorEmpleadoProcesadas' => $ventasPorEmpleadoProcesadas,
-            'ventasSemanaPorEmpleado' => $ventasSemanaPorEmpleado,
             'totalVentasSemana' => $totalVentasSemana,
             'totalPagoHoras' => $weeklyPayments,
             'ventasPorHora' => $salesPerHour,
@@ -376,6 +312,15 @@ class SaleController extends Controller
             'ventasSemanalesGarrafones' => $ventasSemanalesGarrafones,
             'labelsSemanasProd'     => $labelsSemanas,
             'totalesSemanasProd'   => $totalesSemana,
+            'ultimasSemanas' => $historicEmployeesPayments['ultimasSemanas'],
+            'pagosPorEmpleadoSemana' => $historicEmployeesPayments['pagosPorEmpleadoSemana'],
+            'totalesSemanalesPagos' => $historicEmployeesPayments['totalesSemanalesPagos'],
+            'empleados' => $currentEmployeesSalesWeek['empleados'],
+            'ventasPorDia' => $currentEmployeesSalesWeek['ventasPorDia'],
+            'diasSemanaOrden' => $currentEmployeesSalesWeek['diasSemanaOrden'],
+            'totalesPorDiaReordenados' => $currentEmployeesSalesWeek['totalesPorDiaReordenados'],
+            'totalesPorEmpleado' => $currentEmployeesSalesWeek['totalesPorEmpleado'],
+            'ventasSemanaPorEmpleado' => $currentEmployeesSalesWeek['ventasSemanaPorEmpleado'],
         ]);
     }
 }
