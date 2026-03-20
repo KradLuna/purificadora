@@ -135,6 +135,7 @@ class SaleController extends Controller
     public function destroy(Sale $sale)
     {
         $sale->delete();
+        //todo: cuando se realizo una venta y es eliminada, hay que regresar el stock original
         return redirect()->route('sales.index')->with('success', 'Registro eliminado correctamente.');
     }
 
@@ -206,32 +207,14 @@ class SaleController extends Controller
 
         $labels = [];
         $data = [];
-        $colores = [];
 
         foreach ($weeklySales as $row) {
             $labels[] = "S{$row->semana} ({$row->anio})";
             $data[] = $row->total_semana;
-
-            // Color aleatorio
-            $colores[] = '#' . substr(md5($row->semana . $row->anio), 0, 6);
         }
 
-
-        // === Gráfica de Ventas por Producto (Semana actual) ===
-        $ventasProductos = Sale::select(
-            'product_id',
-            DB::raw('SUM(total) as total')
-        )
-            ->whereBetween('created_at', [$startOfWeek, $endOfWeek])
-            ->groupBy('product_id')
-            ->with('product')
-            ->get();
-
-        $productos = $ventasProductos->map(fn($v) => $v->product->name);
-        $totalesProductos = $ventasProductos->pluck('total');
-
-        // Colores dinámicos para la dona
-        $coloresProductos = collect(range(1, $ventasProductos->count()))->map(function () {
+        // Colores dinámicos para las graficas
+        $coloresProductos = collect(range(1, 25))->map(function () {
             return sprintf('#%06X', mt_rand(0, 0xFFFFFF));
         });
 
@@ -247,8 +230,23 @@ class SaleController extends Controller
 
         // total
         $totalVentasSemana = Sale::whereBetween('created_at', [$startOfWeek, $endOfWeek])->sum('total');
+        // ventas semana actual - DONA GRAFICA 2
+        $ventasProductos = Sale::query()
+            ->select([
+                'products.id as product_id',
+                'products.name as producto',
+                DB::raw('SUM(sales.amount) as cantidad_vendida'),
+                DB::raw('SUM(sales.total) as total_vendido'),
+            ])
+            ->join('products', 'products.id', '=', 'sales.product_id')
+            ->whereBetween('sales.created_at', [$startOfWeek, $endOfWeek])
+            ->whereNull('sales.deleted_at')
+            ->where('products.price', '>', 1)
+            ->groupBy('products.id', 'products.name')
+            ->orderByDesc('total_vendido')
+            ->get();
 
-        //ventas historicas por producto
+        //ventas historicas por producto - DONA GRAFICA 4
         $globalSalesPerProduct = Sale::query()
             ->select([
                 'products.id as product_id',
@@ -258,7 +256,7 @@ class SaleController extends Controller
             ])
             ->join('products', 'products.id', '=', 'sales.product_id')
             ->whereNull('sales.deleted_at')
-            ->whereNotIn('products.id', [10, 11])
+            ->where('products.price', '>', 1)
             ->groupBy('products.id', 'products.name')
             ->orderByDesc('total_vendido')
             ->get();
@@ -299,9 +297,8 @@ class SaleController extends Controller
         return view('sales.summary', [
             'labels' => $labels,
             'data' => $data,
-            'colores' => $colores,
-            'productos' => $productos,
-            'totalesProductos' => $totalesProductos,
+            // 'productos' => $productos,
+            'ventasProductos' => $ventasProductos,
             'coloresProductos' => $coloresProductos,
             'totalVentasSemana' => $totalVentasSemana,
             'totalPagoHoras' => $weeklyPayments,

@@ -170,7 +170,7 @@
         <!-- Gráfica 1: Ventas históricas semanales -->
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header bg-primary text-white">Ventas históricas semanales</div>
+                <div class="card-header bg-primary text-white">Ventas semanales (sin venta de garrafones)</div>
                 <div class="card-body" style="overflow-x: auto;">
                     <canvas id="ventasPorSemanaChart" style="height: 350px; min-width: 120%; max-width: 120%;"></canvas>
                 </div>
@@ -179,7 +179,7 @@
 
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header bg-dark text-white">Ventas semanales (Garrafones)</div>
+                <div class="card-header bg-dark text-white">Ventas de garrafones semanales</div>
                 <div class="card-body" style="overflow-x: auto;">
                     <canvas id="ventasSemanalesProductosChart"
                         style="height: 350px; min-width: 120%; max-width: 120%;"></canvas>
@@ -193,10 +193,10 @@
         <!-- Gráfica 2: Ventas por Producto -->
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header bg-success text-white">Ventas por Producto (Semana Actual)</div>
-                <div class="card-body" style="height: 450px; overflow-y: auto; overflow-x: auto;">
-                    <div style="min-height: 400px; min-width: 100%;">
-                        <canvas id="productosChart" style="display: block; width: 100%; height: 100%;"></canvas>
+                <div class="card-header bg-success text-white">Ventas semana actual por producto </div>
+                <div class="card-body">
+                    <div style="height: 600px; overflow-y: auto;">
+                        <canvas id="productosChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -208,9 +208,9 @@
                 <div class="card-header bg-warning text-white">
                     Ventas históricas por producto
                 </div>
-                <div class="card-body" style="height: 450px; overflow-y: auto; overflow-x: auto;">
-                    <div style="min-height: 400px; min-width: 100%;">
-                        <canvas id="ventasProductoGlobalChart" style="display: block; width: 100%; height: 100%;"></canvas>
+                <div class="card-body">
+                    <div style="height: 600px; width: 100%;">
+                        <canvas id="ventasProductoGlobalChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -221,7 +221,7 @@
         <div class="col-md-6">
             <div class="card h-100">
                 <div class="card-header bg-secondary text-white">
-                    Ventas históricas por día de la semana
+                    Ventas ultimas 9 semanas por día
                 </div>
                 <div class="card-body" style="height: 450px; overflow-y: auto;">
                     <canvas id="ventasPorDiaSemanaChart" style="height: 400px; width: 100%;"></canvas>
@@ -257,7 +257,7 @@
                 datasets: [{
                     label: 'Ventas ($)',
                     data: @json($data),
-                    backgroundColor: @json($colores),
+                    backgroundColor: @json($coloresProductos),
                     borderWidth: 1
                 }]
             },
@@ -304,42 +304,49 @@
 
         // === Gráfica 2: Ventas por Producto (con valores visibles) ===
         const ctx2 = document.getElementById('productosChart').getContext('2d');
-
+        //ventasProductos
         new Chart(ctx2, {
             type: 'doughnut',
             data: {
-                labels: @json($productos),
+                labels: @json($ventasProductos->pluck('producto')),
                 datasets: [{
-                    data: @json($totalesProductos),
+                    data: @json($ventasProductos->pluck('total_vendido')),
                     backgroundColor: @json($coloresProductos),
-                    borderColor: '#fff',
-                    borderWidth: 2
+                    borderWidth: 2,
+                    borderColor: '#fff'
                 }]
             },
-            plugins: [ChartDataLabels], // <-- habilitamos el plugin
+            plugins: [ChartDataLabels],
             options: {
                 responsive: true,
-                //maintainAspectRatio: false, // <-- importante queremos scroll
-                maintainAspectRatio: true, // Cambiado a true para mantener proporción
-                aspectRatio: .9, // Controla el ancho/alto (más alto = más ancho)
+                // maintainAspectRatio: false,
+                maintainAspectRatio: false, // Cambiado a true para mantener proporción
+                aspectRatio: 0.7, // Controla el ancho/alto (más alto = más ancho)
                 plugins: {
                     legend: {
                         position: 'bottom'
                     },
                     tooltip: {
                         callbacks: {
-                            label: ctx => `${ctx.label}: $${ctx.parsed.toLocaleString()}`
+                            label: function(context) {
+                                const cantidad = @json($ventasProductos->pluck('cantidad_vendida'))[context.dataIndex];
+                                const total = context.parsed;
+                                return `${context.label}: $${total.toLocaleString()} (${cantidad})`;
+                            }
                         }
                     },
                     datalabels: {
                         color: '#000',
-                        formatter: value => `$${value.toLocaleString()}`,
+                        formatter: function(value, context) {
+                            const cantidad = @json($ventasProductos->pluck('cantidad_vendida'))[context.dataIndex];
+                            return `$${value.toLocaleString()} (${cantidad})`;
+                        },
                         font: {
                             weight: 'bold',
-                            size: 13
+                            size: 11
                         },
                         textShadowBlur: 10,
-                        textShadowColor: 'rgba(255, 255, 255, 1)',
+                        textShadowColor: 'rgba(255,255,255,1)'
                     }
                 }
             }
@@ -355,7 +362,7 @@
                 datasets: [{
                     label: 'Ventas por hora ($)',
                     data: @json($ventasPorHora->pluck('venta')),
-                    backgroundColor: @json($colores),
+                    backgroundColor: @json($coloresProductos),
                     borderWidth: 1
                 }]
             },
@@ -409,7 +416,7 @@
                 labels: @json($ventasProductosGlobal->pluck('producto')),
                 datasets: [{
                     data: @json($ventasProductosGlobal->pluck('total_vendido')),
-                    backgroundColor: @json($colores),
+                    backgroundColor: @json($coloresProductos),
                     borderWidth: 2,
                     borderColor: '#fff'
                 }]
@@ -418,8 +425,8 @@
             options: {
                 responsive: true,
                 // maintainAspectRatio: false,
-                maintainAspectRatio: true, // Cambiado a true para mantener proporción
-                aspectRatio: 0.9, // Controla el ancho/alto (más alto = más ancho)
+                maintainAspectRatio: false, // Cambiado a true para mantener proporción
+                aspectRatio: 0.7, // Controla el ancho/alto (más alto = más ancho)
                 plugins: {
                     legend: {
                         position: 'bottom'
@@ -441,7 +448,7 @@
                         },
                         font: {
                             weight: 'bold',
-                            size: 12
+                            size: 11
                         },
                         textShadowBlur: 10,
                         textShadowColor: 'rgba(255,255,255,1)'
@@ -462,7 +469,7 @@
                 datasets: [{
                     label: 'Ventas por día ($)',
                     data: @json($dataDias),
-                    backgroundColor: @json($colores),
+                    backgroundColor: @json($coloresProductos),
                     borderWidth: 1
                 }]
             },
@@ -513,7 +520,7 @@
                 datasets: [{
                     label: 'Ventas ($)',
                     data: @json($totalesSemanasProd),
-                    backgroundColor: @json($colores),
+                    backgroundColor: @json($coloresProductos),
                     borderWidth: 1
                 }]
             },

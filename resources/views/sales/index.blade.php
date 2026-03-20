@@ -30,7 +30,9 @@
                     <div class="card-body">
                         <h5 class="card-title">{{ $product->name }}</h5>
                         <p class="card-text h4 text-success">
-                            ${{ number_format($product->price, 2) }}
+                            @if ($product->price > 0)
+                                ${{ number_format($product->price, 2) }}
+                            @endif
                         </p>
                         <small class="text-muted">Presiona para vender</small>
                         @if (isset($product->stock))

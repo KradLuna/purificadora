@@ -77,22 +77,58 @@ class Product extends Model
      * tenemos una situacion, compartimos stock de los mismos garrafones
      * asi que si se vende uno, se reducen en sus 2 presentaciones
      */
-    public function reduceStock(): void
+    public function reduceStock(int $amount): void
     {
-        if (isset($this->stock) && $this->stock > 0) {
+        if (isset($this->stock)) {
             switch ($this->id) {
-                case 6:
-                case 12:
-                    Product::whereIn('id', [6, 12])->decrement('stock');
+                case 6: //Venta Garrafón 20L
+                case 12: //Venta Garrafon 20L vacío
+                    Product::whereIn('id', [6, 12])->where('stock', '>', 0)->decrement('stock', $amount);
                     break;
-                case 7:
-                case 13:
-                    Product::whereIn('id', [7, 13])->decrement('stock');
+                case 7: //Venta Garrafón 11L
+                case 13: //Venta Garrafon 11L vacío
+                    Product::whereIn('id', [7, 13])->where('stock', '>', 0)->decrement('stock', $amount);
                     break;
-                case 15:
+                case 15: //Venta Garrafon 20L Chupón
                     //case 16: pendiente en dar de alta
-                    //Product::whereIn('id', [15, 16])->decrement('stock');
-                    Product::where('id', 15)->decrement('stock');
+                    //Product::whereIn('id', [15, 16])->where('stock', '>',0)->decrement('stock', $amount);
+                    Product::where('id', 15)->where('stock', '>', 0)->decrement('stock', $amount);
+                    break;
+                case 18: //Bolsa hielo 5kg
+                    Product::where('id', 18)->where('stock', '>', 0)->decrement('stock', $amount);
+                    break;
+                case 19: //Bolsa hielo 3kg
+                    Product::where('id', 19)->where('stock', '>', 0)->decrement('stock', $amount);
+                    break;
+                default:
+                    # code...
+                    break;
+            }
+        }
+    }
+    /**
+     * reducimos el stock con cada venta
+     * tenemos una situacion, compartimos stock de los mismos garrafones
+     * asi que si se vende uno, se reducen en sus 2 presentaciones
+     */
+    public function increaseStock(int $amount): void
+    {
+        logger('increaseStock: ' . json_encode($amount));
+        logger('increaseStock2: ' . json_encode($this));
+        if (is_null($this->stock)) {
+            logger('increaseStock3: ' . json_encode($this));
+            switch ($this->id) {
+                case 20: //Bolsa hielo 3kg
+                    Product::where('id', 19)->increment('stock', $amount);
+                    break;
+                case 21: //Bolsa hielo 5kg
+                    Product::where('id', 18)->increment('stock', $amount);
+                    break;
+                case 22: //Compra de Garrafón 11L
+                    Product::whereIn('id', [7, 13])->increment('stock', $amount);
+                    break;
+                case 23: //Compro de Garrafón 20L
+                    Product::whereIn('id', [6, 12])->increment('stock', $amount);
                     break;
                 default:
                     # code...
@@ -106,6 +142,6 @@ class Product extends Model
      */
     public static function getActivedProducts()
     {
-        return Product::where('is_active', true)->get();
+        return Product::where('is_active', true)->orderBy('liters', 'desc')->get();
     }
 }

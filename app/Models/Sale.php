@@ -58,13 +58,33 @@ class Sale extends Model
                 'message' => $errorMsg
             ];
         }
-        $sale = Sale::create([
-            'employee_id' => Auth::user()->id,
-            'product_id' => $data['product_id'],
-            'amount' => $data['amount'],
-            'total' => Product::find($data['product_id'])->price * $data['amount'],
-        ]);
-        $sale->product->reduceStock();
+        /**
+         * para aumentar stock
+         * para los productos
+         */
+
+        $product = Product::find($data['product_id']);
+        if (isset($product->stock) && $product->stock < $data['amount']) {
+            return [
+                'success' => false,
+                'message' => "No hay suficientes insumos para realizar la venta."
+            ];
+        }
+        if ($data['product_id'] >= 20 && $data['product_id'] <= 23) {
+            $product->increaseStock($data['amount']);
+            $sale = $product;
+        } else {
+            $sale = DB::transaction(function () use ($data, $product) {
+                $sale = Sale::create([
+                    'employee_id' => Auth::user()->id,
+                    'product_id' => $data['product_id'],
+                    'amount' => $data['amount'],
+                    'total' => $product->price * $data['amount'],
+                ]);
+                $sale->product->reduceStock($data['amount']);
+                return $sale;
+            });
+        }
         return [
             'success' => true,
             'sale' => $sale
@@ -121,7 +141,7 @@ class Sale extends Model
      */
 
     /**
-     * // Ventas Semanales (Ventas históricas semanales) - Excluyendo ventas de garrafones
+     * Ventas Semanales (Ventas históricas semanales) - Excluyendo ventas de garrafones
      */
     public static function weeklySales()
     {
