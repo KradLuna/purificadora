@@ -72,19 +72,17 @@ class Sale extends Model
         }
         if ($data['product_id'] >= 20 && $data['product_id'] <= 23) {
             $product->increaseStock($data['amount']);
-            $sale = $product;
-        } else {
-            $sale = DB::transaction(function () use ($data, $product) {
-                $sale = Sale::create([
-                    'employee_id' => Auth::user()->id,
-                    'product_id' => $data['product_id'],
-                    'amount' => $data['amount'],
-                    'total' => $product->price * $data['amount'],
-                ]);
-                $sale->product->reduceStock($data['amount']);
-                return $sale;
-            });
         }
+        $sale = DB::transaction(function () use ($data, $product) {
+            $sale = Sale::create([
+                'employee_id' => Auth::user()->id,
+                'product_id' => $data['product_id'],
+                'amount' => $data['amount'],
+                'total' => $product->price * $data['amount'],
+            ]);
+            $sale->product->reduceStock($data['amount']);
+            return $sale;
+        });
         return [
             'success' => true,
             'sale' => $sale
