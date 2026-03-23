@@ -199,12 +199,14 @@ class Sale extends Model
             ->leftJoin('records as s', function ($join) {
                 $join->on('s.user_id', '=', 'e.user_id')
                     ->where('s.record_type_id', 4)
+                    ->whereNull('s.deleted_at')  //filtramos soft deletes en el JOIN
                     ->whereRaw('s.created_at = (
                 SELECT MIN(s2.created_at)
                 FROM records s2
                 WHERE s2.user_id = e.user_id
                   AND s2.record_type_id = 4
                   AND s2.created_at > e.created_at
+                  AND s2.deleted_at IS NULL
             )');
             })
             ->where('e.record_type_id', 1)
