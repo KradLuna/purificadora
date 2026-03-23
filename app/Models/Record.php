@@ -195,8 +195,11 @@ class Record extends Model
      * Se dispara automáticamente cada vez que asignes created_at.
      * Usa Carbon para analizar la hora y ajustarla según tus reglas.
      * Guarda el valor ya redondeado en la BD.
+     * 
+     * SI QUEREMOS VOLVER A ACTIVARLO QUITAMOS 'InactiveForNow' Y SOLO DEJAMOS
+     * LO DE SET
      */
-    public function setCreatedAtAttribute($value)
+    public function InactiveForNowsetCreatedAtAttribute($value)
     {
         $t = Carbon::parse($value);
         $minute = $t->minute;
