@@ -141,18 +141,19 @@ class Sale extends Model
     /**
      * Ventas Semanales (Ventas históricas semanales) - Excluyendo ventas de garrafones
      */
-    public static function weeklySales()
+    public static function weeklySales(array $idsProductToDiscart)
     {
         return DB::table('sales')
             ->selectRaw('YEAR(created_at) AS anio')
             ->selectRaw('WEEK(created_at, 1) AS semana')
             ->selectRaw('SUM(total) AS total_semana')
             ->whereNull('sales.deleted_at')
-            ->whereNotIn('sales.product_id', function ($query) {
-                $query->select('id')
-                    ->from('products')
-                    ->where('name', 'like', '%venta%');
-            })
+            // ->whereNotIn('sales.product_id', function ($query) {
+            //     $query->select('id')
+            //         ->from('products')
+            //         ->where('name', 'like', '%venta%');
+            // })
+            ->whereNotIn('sales.product_id', $idsProductToDiscart) // IDs de garrafones y hielos
             ->where('created_at', '>=', now()->subWeeks(9)->startOfWeek())
             ->groupByRaw('YEAR(created_at), WEEK(created_at, 1)')
             ->orderBy('anio')
@@ -161,9 +162,11 @@ class Sale extends Model
     }
 
     /**
-     * ventas semanales de garrafon:
+     * ventas semanales de:
+     * garrafon [6, 7, 12, 13, 15]
+     * hielo [18,19]
      */
-    public static function currentSalesWeek()
+    public static function currentSalesWeek(array $idsProduct)
     {
         // Ventas Semanales de Garrafones
         return Sale::query()
@@ -174,7 +177,7 @@ class Sale extends Model
             ')
             ->join('products', 'products.id', '=', 'sales.product_id')
             ->whereNull('sales.deleted_at')
-            ->whereIn('products.id', [6, 7, 12, 13, 15]) // IDs de garrafones
+            ->whereIn('products.id', $idsProduct) // IDs de garrafones
             ->where('sales.created_at', '>=', now()->subWeeks(9)->startOfWeek())
             ->groupByRaw('YEAR(sales.created_at), WEEK(sales.created_at, 1)')
             ->orderBy('anio')
@@ -422,6 +425,104 @@ class Sale extends Model
         $currentEmployeesSalesWeek['ventasSemanaPorEmpleado'] = $ventasSemanaPorEmpleado;
 
         return $currentEmployeesSalesWeek;
+    }
+
+    public static function resumenProductosPorSemana()
+    {
+        // Obtener últimas 6 semanas (lunes a domingo)
+        $ultimasSemanas = self::getUltimasSemanas(6);
+
+        // Consulta principal con Eloquent
+        $ventasPorSemana = Sale::select(
+            DB::raw('DATE_ADD(DATE(sales.created_at), INTERVAL -WEEKDAY(DATE(sales.created_at)) DAY) as week_start'),
+            'products.description as grupo',
+            DB::raw('SUM(sales.total) as total_ventas')
+        )
+            ->join('products', 'sales.product_id', '=', 'products.id')
+            ->whereIn('products.description', ['1', '2', '3'])
+            ->where('sales.created_at', '>=', $ultimasSemanas[5]['fecha_inicio'] ?? Carbon::now()->subWeeks(6))
+            ->groupBy('week_start', 'products.description')
+            ->orderBy('week_start', 'DESC')
+            ->get();
+
+        // Organizar datos por semana y grupo
+        $datosPorSemana = [];
+        $totalesSemanales = [];
+
+        foreach ($ventasPorSemana as $venta) {
+            $semanaKey = Carbon::parse($venta->week_start)->format('Y-m-d');
+            $grupoNombre = self::getGrupoNombre($venta->grupo);
+
+            $datosPorSemana[$semanaKey][$grupoNombre] = $venta->total_ventas;
+
+            // Acumular total por semana (para el footer)
+            if (!isset($totalesSemanales[$semanaKey])) {
+                $totalesSemanales[$semanaKey] = 0;
+            }
+            $totalesSemanales[$semanaKey] += $venta->total_ventas;
+        }
+
+        // Calcular ventas netas por semana
+        $ventasNetasPorSemana = [];
+        foreach ($ultimasSemanas as $semana) {
+            $semanaKey = $semana['fecha_inicio']->format('Y-m-d');
+            $parciales = $datosPorSemana[$semanaKey]['Ventas Parciales'] ?? 0;
+            $garrafones = $datosPorSemana[$semanaKey]['Garrafones'] ?? 0;
+            $hielo = $datosPorSemana[$semanaKey]['Hielo'] ?? 0;
+
+            $ventasNetasPorSemana[$semanaKey] = $parciales - ($garrafones + $hielo);
+        }
+
+        // Preparar array para la vista
+        $semanasFormateadas = [];
+        foreach ($ultimasSemanas as $semana) {
+            $semanaKey = $semana['fecha_inicio']->format('Y-m-d');
+            $semanasFormateadas[] = [
+                'key' => $semanaKey,
+                'label' => $semana['label'],
+                'fecha_inicio' => $semana['fecha_inicio'],
+                'fecha_fin' => $semana['fecha_fin']
+            ];
+        }
+        $data = [];
+        $data['semanasFormateadas'] = $semanasFormateadas;
+        $data['datosPorSemana'] = $datosPorSemana;
+        $data['ventasNetasPorSemana'] = $ventasNetasPorSemana;
+        $data['totalesSemanales'] = $totalesSemanales;
+
+        return $data;
+    }
+
+    private static function getUltimasSemanas($cantidad = 6)
+    {
+        $semanas = [];
+        $hoy = Carbon::now();
+
+        for ($i = 0; $i < $cantidad; $i++) {
+            // Calcular inicio de semana (lunes) de la semana actual menos $i semanas
+            $fechaInicio = $hoy->copy()->subWeeks($i)->startOfWeek(Carbon::MONDAY);
+            $fechaFin = $fechaInicio->copy()->endOfWeek(Carbon::SUNDAY);
+
+            $semanas[] = [
+                'fecha_inicio' => $fechaInicio,
+                'fecha_fin' => $fechaFin,
+                'label' => $fechaInicio->format('d/m/Y') . ' - ' . $fechaFin->format('d/m/Y'),
+                'semana_numero' => $fechaInicio->weekOfYear,
+                'anio' => $fechaInicio->year
+            ];
+        }
+
+        return $semanas;
+    }
+
+    private static function getGrupoNombre($grupo)
+    {
+        return match ($grupo) {
+            '1' => 'Ventas Parciales',
+            '2' => 'Garrafones',
+            '3' => 'Hielo',
+            default => 'Otros'
+        };
     }
 
     /**

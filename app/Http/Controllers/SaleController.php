@@ -202,8 +202,14 @@ class SaleController extends Controller
 
         $weeklyPayments = Sale::weeklyPayments();
 
+        $idsGarrafones = [6, 7, 12, 13, 15];
+        $ventasSemanalesGarrafones = Sale::currentSalesWeek($idsGarrafones);
+        $idsHielos = [18, 19];
+        //$ventasSemanalesHielos = Sale::currentSalesWeek($idsHielos);
+
         // Ventas Semanales (Ventas históricas semanales)
-        $weeklySales = Sale::weeklySales();
+        $idsProductsToDiscart = array_merge($idsGarrafones, $idsHielos);
+        $weeklySales = Sale::weeklySales($idsProductsToDiscart);
 
         $labels = [];
         $data = [];
@@ -247,7 +253,7 @@ class SaleController extends Controller
             ->get();
 
         //ventas historicas por producto - DONA GRAFICA 4
-        $globalSalesPerProduct = Sale::query()
+        $ventasProductosGlobal = Sale::query()
             ->select([
                 'products.id as product_id',
                 'products.name as producto',
@@ -265,7 +271,7 @@ class SaleController extends Controller
          * preparando ventas semanales de garrafones
          */
 
-        // Primero, genera un array con las últimas 9 semanas
+        //Primero, genera un array con las últimas 9 semanas
         $semanas = collect();
         for ($i = 9; $i >= 0; $i--) {
             $fecha = Carbon::now()->subWeeks($i);
@@ -275,7 +281,6 @@ class SaleController extends Controller
                 'label' => "S" . $fecha->weekOfYear . " (" . $fecha->year . ")"
             ]);
         }
-        $ventasSemanalesGarrafones = Sale::currentSalesWeek();
 
         $labelsSemanas = [];
         $totalesSemana = [];
@@ -290,10 +295,14 @@ class SaleController extends Controller
                 : 0;
         }
 
+        $summaryTable = Sale::resumenProductosPorSemana();
+
         /**
          * calculo de pagos historicos de empleados omitiendo admins
          */
         $historicEmployeesPayments = Sale::historicEmployeesPayments();
+
+
         return view('sales.summary', [
             'labels' => $labels,
             'data' => $data,
@@ -303,7 +312,7 @@ class SaleController extends Controller
             'totalVentasSemana' => $totalVentasSemana,
             'totalPagoHoras' => $weeklyPayments,
             'ventasPorHora' => $salesPerHour,
-            'ventasProductosGlobal' => $globalSalesPerProduct,
+            'ventasProductosGlobal' => $ventasProductosGlobal,
             'labelsDias' => $labelsDias,
             'dataDias' => $dataDias,
             'ventasSemanalesGarrafones' => $ventasSemanalesGarrafones,
@@ -318,6 +327,10 @@ class SaleController extends Controller
             'totalesPorDiaReordenados' => $currentEmployeesSalesWeek['totalesPorDiaReordenados'],
             'totalesPorEmpleado' => $currentEmployeesSalesWeek['totalesPorEmpleado'],
             'ventasSemanaPorEmpleado' => $currentEmployeesSalesWeek['ventasSemanaPorEmpleado'],
+            'semanasFormateadas' => $summaryTable['semanasFormateadas'],
+            'datosPorSemana' => $summaryTable['datosPorSemana'],
+            'ventasNetasPorSemana' => $summaryTable['ventasNetasPorSemana'],
+            'totalesSemanales' => $summaryTable['totalesSemanales'],
         ]);
     }
 }
