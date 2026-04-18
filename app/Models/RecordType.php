@@ -18,6 +18,8 @@ class RecordType extends Model
         'Fin de turno',
         'Cloro',
         'PH',
+        'Corte Bolsas 3kg',
+        'Corte Bolsas 5kg'
     ];
 
 
@@ -31,12 +33,32 @@ class RecordType extends Model
     }
 
     /**
-     * atributo que valida si ya existe corte de caja para poder hacer una venta
+     * atributo que valida si ya el nombre corresponde a fin de turno
      */
     public function isEndWorkShift(): Attribute
     {
         return Attribute::make(
             get: fn() => $this->name == self::TYPES[3] ? true : false,
+        );
+    }
+
+    /**
+     * atributo que valida si ya el nombre corresponde a bolsa3kg
+     */
+    public function isThreeKgBag(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->name == self::TYPES[6] ? true : false,
+        );
+    }
+
+    /**
+     * atributo que valida si ya el nombre corresponde a bolsa3kg
+     */
+    public function isFiveKgBag(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->name == self::TYPES[7] ? true : false,
         );
     }
 

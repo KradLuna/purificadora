@@ -144,4 +144,20 @@ class Product extends Model
     {
         return Product::where('is_active', true)->orderBy('liters', 'desc')->get();
     }
+
+    /**
+     * retorna todos los productos activos para poder realizar ventas
+     */
+    public static function getCurrent3KgBag()
+    {
+        return Product::where('name', 'Bolsa hielo 3kg')->value('stock');
+    }
+
+    /**
+     * retorna todos los productos activos para poder realizar ventas
+     */
+    public static function getCurrent5KgBag()
+    {
+        return Product::where('name', 'Bolsa hielo 5kg')->value('stock');
+    }
 }

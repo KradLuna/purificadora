@@ -199,6 +199,8 @@
                     labelValue.textContent = 'Valor del medidor en litros';
                 } else if (tipo === 2) {
                     labelValue.textContent = 'Dinero en caja';
+                } else if (tipo === 6 || tipo === 7) {
+                    labelValue.textContent = 'Número de bolsas';
                 } else {
                     labelValue.textContent = 'Valor';
                 }

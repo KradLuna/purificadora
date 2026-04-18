@@ -78,6 +78,18 @@ class Record extends Model
                         throw new Exception("El valor debería estar entre [$min_counter y $max_counter], verifica las ventas registradas.");
                     }
                 }
+                if ($record->record_type->is_five_kg_bag) {
+                    $getCurrent5KgBag = Product::getCurrent5KgBag();
+                    if ($getCurrent5KgBag != (int)$record->value) {
+                        throw new Exception("Falta registrar venta y/o armado de bolsas, el número de bolsas de 5kg debería ser: " . $getCurrent5KgBag);
+                    }
+                }
+                if ($record->record_type->is_three_kg_bag) {
+                    $getCurrent3KgBag = Product::getCurrent3KgBag();
+                    if ($getCurrent3KgBag != (int)$record->value) {
+                        throw new Exception("Falta registrar venta y/o armado de bolsas, el número de bolsas de 3kg debería ser: " . $getCurrent3KgBag);
+                    }
+                }
                 return [
                     'success' => true,
                     'sale' => $record
@@ -158,9 +170,11 @@ class Record extends Model
         $requirements = [
             RecordType::TYPES[1] => [RecordType::TYPES[0]],
             RecordType::TYPES[2] => [RecordType::TYPES[0]],
-            RecordType::TYPES[3] => [[RecordType::TYPES[0], RecordType::TYPES[2]]], //
+            RecordType::TYPES[3] => [RecordType::TYPES[0], RecordType::TYPES[6], RecordType::TYPES[7]], //necesarios para cerrar turno
             RecordType::TYPES[4] => [RecordType::TYPES[0]],
             RecordType::TYPES[5] => [RecordType::TYPES[0]],
+            RecordType::TYPES[6] => [RecordType::TYPES[0]],
+            RecordType::TYPES[7] => [RecordType::TYPES[0]],
         ];
         if (isset($requirements[$requiredName])) {
             foreach ($requirements[$requiredName] as $requiredType) {

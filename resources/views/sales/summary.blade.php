@@ -235,9 +235,9 @@
                             </thead>
                             <tbody>
                                 {{-- Ventas Parciales (Grupo 1) --}}
-                                <tr style="background-color: #fff3cd;">
-                                    <td class="fw-bold text-warning">
-                                        <i class="fas fa-chart-simple me-1"></i> Ventas Parciales
+                                <tr class="table-active" style="background-color: #e7f3ff;">
+                                    <td class="fw-bold text-primary fs-5">
+                                        <i class="fas fa-calculator me-1"></i></i> Ventas
                                     </td>
                                     @php $totalParciales = 0; @endphp
                                     @foreach ($semanasFormateadas as $semana)
@@ -285,7 +285,7 @@
                                         ${{ number_format($totalHielo, 2) }}</td>
                                 </tr>
 
-                                {{-- Ventas Netas --}}
+                                {{-- Ventas Netas
                                 <tr class="table-active" style="background-color: #e7f3ff;">
                                     <td class="fw-bold text-primary fs-5">
                                         <i class="fas fa-calculator me-1"></i> VENTAS NETAS
@@ -300,7 +300,7 @@
                                     @endforeach
                                     <td class="text-end fw-bold bg-primary text-white">${{ number_format($totalNeto, 2) }}
                                     </td>
-                                </tr>
+                                </tr> --}}
                             </tbody>
                             <tfoot style="background-color: #f8f9fa;">
                                 <tr class="fw-bold">
