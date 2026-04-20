@@ -80,6 +80,10 @@ ruta del proyecto:
 
 > php artisan migrate
 
+* si cambiamos seeders:
+
+> php artisan db:seed --class=RecordTypesSeeder
+
 ### comando utiles en remoto:
 
 * si sale algo de rutas sin permisos:

@@ -70,7 +70,7 @@ class Sale extends Model
                 'message' => "No hay suficientes insumos para realizar la venta."
             ];
         }
-        if ($data['product_id'] >= 20 && $data['product_id'] <= 23) {
+        if ($data['product_id'] >= 20 && $data['product_id'] <= 23 || $data['product_id'] <= 25) {
             $product->increaseStock($data['amount']);
         }
         $sale = DB::transaction(function () use ($data, $product) {

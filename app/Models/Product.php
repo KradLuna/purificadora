@@ -53,11 +53,11 @@ class Product extends Model
         if ($this->wasChanged('stock')) { //verificamos que han actualizado el stock
             switch ($this->id) {
                 case 6:
-                case 12:
+                case 12: //garrafon 20l
                     Product::whereIn('id', [6, 12])->update(['stock' => $data['stock']]);
                     break;
                 case 7:
-                case 13:
+                case 13: //garraofn de 11l
                     Product::whereIn('id', [7, 13])->update(['stock' => $data['stock']]);
                     break;
                 case 15:
@@ -98,7 +98,8 @@ class Product extends Model
                     Product::where('id', 18)->where('stock', '>', 0)->decrement('stock', $amount);
                     break;
                 case 19: //Bolsa hielo 3kg
-                    Product::where('id', 19)->where('stock', '>', 0)->decrement('stock', $amount);
+                case 25: //Bolsa hielo 3kg (cupon)
+                    Product::whereIn('id', [19, 25])->where('stock', '>', 0)->decrement('stock', $amount);
                     break;
                 default:
                     # code...
@@ -118,8 +119,8 @@ class Product extends Model
         if (is_null($this->stock)) {
             logger('increaseStock3: ' . json_encode($this));
             switch ($this->id) {
-                case 20: //Bolsa hielo 3kg
-                    Product::where('id', 19)->increment('stock', $amount);
+                case 20: //Bolsa hielo 3kg y cupon 20-abr-26
+                    Product::whereIn('id', [19, 25])->increment('stock', $amount);
                     break;
                 case 21: //Bolsa hielo 5kg
                     Product::where('id', 18)->increment('stock', $amount);
