@@ -204,7 +204,7 @@ class SaleController extends Controller
 
         $idsGarrafones = [6, 7, 12, 13, 15];
         $ventasSemanalesGarrafones = Sale::currentSalesWeek($idsGarrafones);
-        $idsHielos = [18, 19];
+        $idsHielos = [18, 19, 25];
         //$ventasSemanalesHielos = Sale::currentSalesWeek($idsHielos);
 
         // Ventas Semanales (Ventas históricas semanales)
