@@ -57,7 +57,7 @@ class Product extends Model
                     Product::whereIn('id', [6, 12])->update(['stock' => $data['stock']]);
                     break;
                 case 7:
-                case 13: //garraofn de 11l
+                case 13: //garrafon de 11l
                     Product::whereIn('id', [7, 13])->update(['stock' => $data['stock']]);
                     break;
                 case 15:
@@ -94,12 +94,14 @@ class Product extends Model
                     //Product::whereIn('id', [15, 16])->where('stock', '>',0)->decrement('stock', $amount);
                     Product::where('id', 15)->where('stock', '>', 0)->decrement('stock', $amount);
                     break;
-                case 18: //Bolsa hielo 5kg
-                    Product::where('id', 18)->where('stock', '>', 0)->decrement('stock', $amount);
+                //case 18: //Bolsa hielo 5kg (25)
+                case 27: //Bolsa hielo 5kg
+                    Product::where('id', 27)->where('stock', '>', 0)->decrement('stock', $amount);
                     break;
-                case 19: //Bolsa hielo 3kg
+                //case 19: //Bolsa hielo 3kg (15)
                 case 25: //Bolsa hielo 3kg (cupon)
-                    Product::whereIn('id', [19, 25])->where('stock', '>', 0)->decrement('stock', $amount);
+                case 28: //Bolsa hielo 3kg
+                    Product::whereIn('id', [25, 28])->where('stock', '>', 0)->decrement('stock', $amount);
                     break;
                 default:
                     # code...
@@ -120,10 +122,10 @@ class Product extends Model
             logger('increaseStock3: ' . json_encode($this));
             switch ($this->id) {
                 case 20: //Bolsa hielo 3kg y cupon 20-abr-26
-                    Product::whereIn('id', [19, 25])->increment('stock', $amount);
+                    Product::whereIn('id', [25, 28])->increment('stock', $amount);
                     break;
                 case 21: //Bolsa hielo 5kg
-                    Product::where('id', 18)->increment('stock', $amount);
+                    Product::where('id', 27)->increment('stock', $amount);
                     break;
                 case 22: //Compra de Garrafón 11L
                     Product::whereIn('id', [7, 13])->increment('stock', $amount);
