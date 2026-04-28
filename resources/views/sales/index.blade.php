@@ -203,5 +203,23 @@
                 }
             })
         }
+
+        @if (session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: @json(session('success')),
+                confirmButtonText: 'Aceptar'
+            });
+        @endif
+
+        @if (session('fail'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: @json(session('fail')),
+                confirmButtonText: 'Aceptar'
+            });
+        @endif
     </script>
 @stop

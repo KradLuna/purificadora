@@ -70,9 +70,9 @@ class Sale extends Model
                 'message' => "No hay suficientes insumos para realizar la venta."
             ];
         }
-        if ($data['product_id'] >= 20 && $data['product_id'] <= 23 || $data['product_id'] <= 25) {
-            $product->increaseStock($data['amount']);
-        }
+        // if ($data['product_id'] >= 20 && $data['product_id'] <= 23 || $data['product_id'] <= 25) {
+        //     $product->increaseStock($data['amount']);
+        // }
         $sale = DB::transaction(function () use ($data, $product) {
             $sale = Sale::create([
                 'employee_id' => Auth::user()->id,
@@ -81,6 +81,7 @@ class Sale extends Model
                 'total' => $product->price * $data['amount'],
             ]);
             $sale->product->reduceStock($data['amount']);
+            $sale->product->increaseStock($data['amount']);
             return $sale;
         });
         return [
@@ -102,8 +103,6 @@ class Sale extends Model
             ->where('employee_id', $this->user->id)
             ->sum('total');
     }
-
-
 
     /**
      * HISTORIC

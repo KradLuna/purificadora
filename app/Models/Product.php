@@ -84,27 +84,31 @@ class Product extends Model
                 case 6: //Venta Garrafón 20L
                 case 12: //Venta Garrafon 20L vacío
                     Product::whereIn('id', [6, 12])->where('stock', '>', 0)->decrement('stock', $amount);
+                    logger("Se redujó el producto: " . json_encode($this) . ", en: " . $amount);
                     break;
                 case 7: //Venta Garrafón 11L
                 case 13: //Venta Garrafon 11L vacío
                     Product::whereIn('id', [7, 13])->where('stock', '>', 0)->decrement('stock', $amount);
+                    logger("Se redujó el producto: " . json_encode($this) . ", en: " . $amount);
                     break;
                 case 15: //Venta Garrafon 20L Chupón
                     //case 16: pendiente en dar de alta
                     //Product::whereIn('id', [15, 16])->where('stock', '>',0)->decrement('stock', $amount);
                     Product::where('id', 15)->where('stock', '>', 0)->decrement('stock', $amount);
+                    logger("Se redujó el producto: " . json_encode($this) . ", en: " . $amount);
                     break;
                 //case 18: //Bolsa hielo 5kg (25)
                 case 27: //Bolsa hielo 5kg
                     Product::where('id', 27)->where('stock', '>', 0)->decrement('stock', $amount);
+                    logger("Se redujó el producto: " . json_encode($this) . ", en: " . $amount);
                     break;
                 //case 19: //Bolsa hielo 3kg (15)
                 case 25: //Bolsa hielo 3kg (cupon)
                 case 28: //Bolsa hielo 3kg
                     Product::whereIn('id', [25, 28])->where('stock', '>', 0)->decrement('stock', $amount);
+                    logger("Se redujó el producto: " . json_encode($this) . ", en: " . $amount);
                     break;
                 default:
-                    # code...
                     break;
             }
         }
@@ -116,28 +120,155 @@ class Product extends Model
      */
     public function increaseStock(int $amount): void
     {
-        logger('increaseStock: ' . json_encode($amount));
-        logger('increaseStock2: ' . json_encode($this));
         if (is_null($this->stock)) {
-            logger('increaseStock3: ' . json_encode($this));
             switch ($this->id) {
                 case 20: //Bolsa hielo 3kg y cupon 20-abr-26
                     Product::whereIn('id', [25, 28])->increment('stock', $amount);
+                    logger("Se aumentó el producto: " . json_encode($this) . ", en: " . $amount);
                     break;
                 case 21: //Bolsa hielo 5kg
                     Product::where('id', 27)->increment('stock', $amount);
+                    logger("Se aumentó el producto: " . json_encode($this) . ", en: " . $amount);
                     break;
                 case 22: //Compra de Garrafón 11L
                     Product::whereIn('id', [7, 13])->increment('stock', $amount);
+                    logger("Se aumentó el producto: " . json_encode($this) . ", en: " . $amount);
                     break;
                 case 23: //Compro de Garrafón 20L
                     Product::whereIn('id', [6, 12])->increment('stock', $amount);
+                    logger("Se aumentó el producto: " . json_encode($this) . ", en: " . $amount);
                     break;
                 default:
-                    # code...
                     break;
             }
         }
+    }
+
+    /**
+     * haremos un rollback del producto de la venta eliminada
+     */
+    public function reverseStock(int $amount): array
+    {
+        switch ($this->id) {
+
+            case 20: // Bolsa hielo 3kg y cupon 20-abr-26
+
+                if (!Product::whereIn('id', [25, 28])->where('stock', '>', 0)->exists()) {
+                    return [
+                        'success' => false,
+                        'message' => 'No hay stock disponible para revertir Bolsa hielo 3kg.'
+                    ];
+                }
+
+                Product::whereIn('id', [25, 28])
+                    ->where('stock', '>', 0)
+                    ->decrement('stock', $amount);
+
+                logger("Se revirtio el producto: " . json_encode($this) . ", en: " . $amount);
+                break;
+
+
+            case 21: // Bolsa hielo 5kg
+
+                if (!Product::where('id', 27)->where('stock', '>', 0)->exists()) {
+                    return [
+                        'success' => false,
+                        'message' => 'No hay stock disponible para revertir Bolsa hielo 5kg.'
+                    ];
+                }
+
+                Product::where('id', 27)
+                    ->where('stock', '>', 0)
+                    ->decrement('stock', $amount);
+
+                logger("Se revirtio el producto: " . json_encode($this) . ", en: " . $amount);
+                break;
+
+
+            case 22: // Compra de Garrafón 11L
+
+                if (!Product::whereIn('id', [7, 13])->where('stock', '>', 0)->exists()) {
+                    return [
+                        'success' => false,
+                        'message' => 'No hay stock disponible para revertir Garrafón 11L.'
+                    ];
+                }
+
+                Product::whereIn('id', [7, 13])
+                    ->where('stock', '>', 0)
+                    ->decrement('stock', $amount);
+
+                logger("Se revirtio el producto: " . json_encode($this) . ", en: " . $amount);
+                break;
+
+
+            case 23: // Compra de Garrafón 20L
+
+                if (!Product::whereIn('id', [6, 12])->where('stock', '>', 0)->exists()) {
+                    return [
+                        'success' => false,
+                        'message' => 'No hay stock disponible para revertir Garrafón 20L.'
+                    ];
+                }
+
+                Product::whereIn('id', [6, 12])
+                    ->where('stock', '>', 0)
+                    ->decrement('stock', $amount);
+
+                logger("Se revirtio el producto: " . json_encode($this) . ", en: " . $amount);
+                break;
+
+
+            case 6: // Venta Garrafón 20L
+            case 12: // Venta Garrafón 20L vacío
+
+                Product::whereIn('id', [6, 12])->increment('stock', $amount);
+
+                logger("Se revirtio el producto: " . json_encode($this) . ", en: " . $amount);
+                break;
+
+
+            case 7: // Venta Garrafón 11L
+            case 13: // Venta Garrafón 11L vacío
+
+                Product::whereIn('id', [7, 13])->increment('stock', $amount);
+
+                logger("Se revirtio el producto: " . json_encode($this) . ", en: " . $amount);
+                break;
+
+
+            case 15: // Venta Garrafón 20L Chupón
+
+                Product::where('id', 15)->increment('stock', $amount);
+
+                logger("Se revirtio el producto: " . json_encode($this) . ", en: " . $amount);
+                break;
+
+
+            case 27: // Bolsa hielo 5kg
+
+                Product::where('id', 27)->increment('stock', $amount);
+
+                logger("Se revirtio el producto: " . json_encode($this) . ", en: " . $amount);
+                break;
+
+
+            case 25: // Bolsa hielo 3kg cupón
+            case 28: // Bolsa hielo 3kg
+
+                Product::whereIn('id', [25, 28])->increment('stock', $amount);
+
+                logger("Se revirtio el producto: " . json_encode($this) . ", en: " . $amount);
+                break;
+
+            default:
+                break;
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Stock revertido correctamente.'
+        ];
     }
 
     /**

@@ -74,6 +74,10 @@ ruta del proyecto:
 *ctrl + o* y enter para guardar 
 *ctrl + x* me pregunta si guardar damos Y
 
+* y usar:
+
+> php artisan config:clear
+
 ### si agregamos migraciones
 
 * despues del git pull, podemos hacer:

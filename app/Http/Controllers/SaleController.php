@@ -134,8 +134,15 @@ class SaleController extends Controller
      */
     public function destroy(Sale $sale)
     {
+        logger("El empleado: " . $sale->user->full_name . ", quiere eliminar: " . $sale->product->name);
+        $result = $sale->product->reverseStock($sale->amount);
+
+        if (!$result['success']) {
+            return redirect()->route('sales.index')->with('fail', $result['message']);
+        }
+
         $sale->delete();
-        //todo: cuando se realizo una venta y es eliminada, hay que regresar el stock original
+        logger("El empleado: " . $sale->user->full_name . ", eliminó: " . $sale->product->name);
         return redirect()->route('sales.index')->with('success', 'Registro eliminado correctamente.');
     }
 

@@ -92,7 +92,9 @@ class HistoricSaleController extends Controller
         $data = $request->validated();
         // ajustamos al ultimo minuto del dia (para saber que las hizo un admins)
         $data['created_at'] = $data['created_at'] . ' 23:59:00';
-        Sale::create($data);
+        $sale = Sale::create($data);
+        $sale->product->increaseStock($sale->amount);
+        $sale->product->reduceStock($sale->amount);
         // if (!$result['success']) { //no deberia haber algun error
         //     return response()->json([
         //         'success' => false,
@@ -148,8 +150,15 @@ class HistoricSaleController extends Controller
      */
     public function destroy(Sale $sale)
     {
-        Log::info("destroy", ["sale" => $sale]);
+        logger("El admin: " . $sale->user->full_name . ", quiere eliminar: " . $sale->product->name);
+        $result = $sale->product->reverseStock($sale->amount);
+
+        if (!$result['success']) {
+            return redirect()->route('historic-sales.index')->with('fail', $result['message']);
+        }
+
         $sale->delete();
-        return redirect()->route('historic-sales.index');
+        logger("El admin: " . $sale->user->full_name . ", eliminó: " . $sale->product->name);
+        return redirect()->route('historic-sales.index')->with('success', 'Registro eliminado correctamente.');
     }
 }
